@@ -176,17 +176,17 @@ def job_receiver():
     # NOTE: 'request' above typically displays something like "<Request 'http://git.door43.org/' [POST]>"
 
     djh_queue = Queue(djh_adjusted_webhook_queue_name, connection=redis_connection)
-    dcjh_queue = Queue(dcjh_adjusted_queue_name, connection=redis_connection)
+    # dcjh_queue = Queue(dcjh_adjusted_queue_name, connection=redis_connection)
 
     # Collect and log some helpful information
     len_djh_queue = len(djh_queue) # Should normally sit at zero here
     stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.current', len_djh_queue)
     len_djh_failed_queue = handle_failed_queue(djh_adjusted_webhook_queue_name)
     stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.failed', len_djh_failed_queue)
-    len_dcjh_queue = len(dcjh_queue) # Should normally sit at zero here
-    stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.queue.length.current', len_dcjh_queue)
-    len_dcjh_failed_queue = handle_failed_queue(dcjh_adjusted_queue_name)
-    stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.queue.length.failed', len_dcjh_failed_queue)
+    # len_dcjh_queue = len(dcjh_queue) # Should normally sit at zero here
+    # stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.queue.length.current', len_dcjh_queue)
+    # len_dcjh_failed_queue = handle_failed_queue(dcjh_adjusted_queue_name)
+    # stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.queue.length.failed', len_dcjh_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
@@ -198,12 +198,12 @@ def job_receiver():
         logger.critical(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
 
-    dcjh_queue_worker_count = Worker.count(queue=dcjh_queue)
-    logger.debug(f"Our {dcjh_adjusted_queue_name} queue workers = {dcjh_queue_worker_count}")
-    stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.workers.available', dcjh_queue_worker_count)
-    if dcjh_queue_worker_count < 1:
-        logger.critical(f"{PREFIXED_DOOR43_CATALOG_JOB_HANDLER_QUEUE_NAME} has no job handler workers running!")
-        # Go ahead and queue the job anyway for when a worker is restarted
+    # dcjh_queue_worker_count = Worker.count(queue=dcjh_queue)
+    # logger.debug(f"Our {dcjh_adjusted_queue_name} queue workers = {dcjh_queue_worker_count}")
+    # stats_client.gauge(f'{enqueue_catalog_job_stats_prefix}.workers.available', dcjh_queue_worker_count)
+    # if dcjh_queue_worker_count < 1:
+    #     logger.critical(f"{PREFIXED_DOOR43_CATALOG_JOB_HANDLER_QUEUE_NAME} has no job handler workers running!")
+    #     # Go ahead and queue the job anyway for when a worker is restarted
 
     response_ok_flag, response_dict = check_posted_payload(request, logger)
     # response_dict is json payload if successful, else error info
@@ -236,18 +236,19 @@ def job_receiver():
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
         djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
-        dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+        # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
         len_djh_queue = len(djh_queue) # Update
-        len_dcjh_queue = len(dcjh_queue) # Update
+        # len_dcjh_queue = len(dcjh_queue) # Update
         logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} queued valid job to {djh_adjusted_webhook_queue_name} queue " \
                     f"({len_djh_queue} jobs now " \
                         f"for {Worker.count(queue=djh_queue)} workers, " \
-                    f"({len_dcjh_queue} jobs now " \
-                        f"for {Worker.count(queue=dcjh_queue)} workers, " \
-                    f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
-                    f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n")
+                    # f"({len_dcjh_queue} jobs now " \
+                    #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
+                    # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
+                    # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
+                    )
 
         webhook_return_dict = {'success': True,
                                'status': 'queued',
