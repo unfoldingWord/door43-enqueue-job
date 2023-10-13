@@ -174,7 +174,7 @@ def cancel_similar_jobs(payload):
         if not queue:
             continue
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
-        logger.info("JOB IDS: ", job_ids)
+        logger.info(f"JOB IDS: {job_ids}")
         for job_id in job_ids:
             logger.info("JOB ID "+job_id)
             job = queue.fetch_job(job_id)
