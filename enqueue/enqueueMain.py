@@ -480,13 +480,14 @@ def getJob(job_id):
         type = "branch"
     branch_or_tag = ref_parts[-1]
 
-    html = f'<h1>JOB: {job_id}</h1><br/>'
-    html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</h2><br/>'
-    html += f'<h3><b>{type.capitalize()}:</b> {branch_or_tag}</h3><br/>'
-    html += f'<h4><b>Status:</b> {job.get_status()}</h4></br>'
-    html += f'<h5><b>Payload:</b>:</h5><br/>'
+    html = f'<h1>JOB ID: {job_id}</h1>'
+    html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</a></h2>'
+    html += f'<h3>{type.capitalize()}: {branch_or_tag}</h3>'
+    html += f'<h4>Status: {job.get_status()}</h4>'
+    html += f'<p><b>Payload:</b>'
     html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2) if payload else "Copy payload from a job"}</textarea>'
-    html += f'<p><a href="../"><== Go back to queue lists</a></p>'
+    html += f'</p>'
+    html += f'<p><a href="../"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
 
