@@ -11,7 +11,7 @@ WORKDIR /code
 RUN pip3 install --upgrade pip
 RUN pip3 install --requirement requirements.txt
 
-# Make http port available to the world outside this container (develop is 8001)
+# Make http port available to the world outside this container
 EXPOSE 8000
 
 # Define environment variables
@@ -26,5 +26,5 @@ ENV MINUTES_TO_WAIT="10"
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)
 #	DEBUG_MODE True (optional -- defaults to False)
 
-# NOTE: this masterBranch listens on 8000 (develop on 8001)
+# NOTE: this masterBranch listens on 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "enqueueMain:app"]
