@@ -173,8 +173,7 @@ def cancel_similar_jobs(payload):
     logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
     logger.info(payload)
     for queue in Queue.all(connection=redis_connection):
-        if not queue or "door43_job_handler" not in queue.name or "tx_job_handler" not in queue.name:
-            logger.info(f"Skipping queue: {queue.name}")
+        if not queue or "handler" not in queue.name:
             continue
         logger.info(f"Finding if jobs in {queue.name}  are similiar to the new job.")
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
