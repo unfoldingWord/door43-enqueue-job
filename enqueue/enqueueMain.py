@@ -170,32 +170,27 @@ def handle_failed_queue(queue_name:str) -> int:
 
 # If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
 def cancel_similar_jobs(payload):
+    if not payload or 'repository' not in payload or 'full_name' not in payload['repository'] or 'ref' not in payload:
+        return
+    logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
+    logger.info(payload)
     for queue in Queue.all(connection=redis_connection):
-        if not queue or "door43_job_handler" not in queue.name or "tx_job_handler" not in queue.name:
+        if not queue or "handler" not in queue.name or "callback" in queue.name:
             continue
-        logger.info(f"Finding if jobs in {queue.name}  are similiar to the new job.")
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
-        logger.info(f"JOB IDS: {job_ids}")
         for job_id in job_ids:
-            logger.info("JOB ID "+job_id)
             job = queue.fetch_job(job_id)
-            if job:
-                logger.info("GOT JOB")
-                existing_job_payload = job.args[1]
-                if payload:
-                    similar = []
-                    for field in ['ref', 'repo.full_name']:
+            if job and len(job.args) > 0:
+                pl = job.args[0]
+                if pl and 'repository' in pl and 'full_name' in pl['repository'] and 'ref' in pl \
+                    and payload['repository']['full_name'] == pl['repository']['full_name'] and payload['ref'] == pl['ref']:
+                        logger.info(f"Found older job for repo: {pl['repository']['full_name']}, ref: {pl['ref']}")
                         try:
-                            new_value = reduce(lambda x,y : x[y],field.split("."),payload)
-                            old_value = reduce(lambda x,y : x[y],field.split("."),existing_job_payload)
-                            similar += [new_value == old_value]
-                            logger.info(f'{job.id}: {field} is {"NOT" if new_value != old_value else ""} similar: {old_value}, {new_value}')
-                        except KeyError:
+                            job.cancel()
+                            logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
+                        except:
                             pass
-                    if all(similar):
-                        job.cancel()
-                        logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
-
+# end of cancel_similar_jobs function
 
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
@@ -274,21 +269,36 @@ def job_receiver():
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+        scheduled = False
+        if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
+            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+            scheduled = True
+        else:
+            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker        
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
         len_djh_queue = len(djh_queue) # Update
-        # len_dcjh_queue = len(dcjh_queue) # Update
-        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} queued valid job to {djh_adjusted_webhook_queue_name} queue " \
-                    f"({len_djh_queue} jobs now " \
-                        f"for {Worker.count(queue=djh_queue)} workers, " \
-                    # f"({len_dcjh_queue} jobs now " \
-                    #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
-                    # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
-                    # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
-                    )
-
+        len_djh_scheduled = len(djh_queue.scheduled_job_registry.get_job_ids())
+        if scheduled:
+            # len_dcjh_queue = len(dcjh_queue) # Update
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.utcnow() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
+                        f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+                            f"for {Worker.count(queue=djh_queue)} workers)" \
+                        # f"({len_dcjh_queue} jobs now " \
+                        #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
+                        # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
+                        # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
+            )
+        else:
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} added to the {djh_adjusted_webhook_queue_name} queue  at {datetime.utcnow()}" \
+                        f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+                            f"for {Worker.count(queue=djh_queue)} workers)" \
+                        # f"({len_dcjh_queue} jobs now " \
+                        #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
+                        # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
+                        # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
+            )
         webhook_return_dict = {'success': True,
                                'status': 'queued',
                                'queue_name': djh_adjusted_webhook_queue_name,

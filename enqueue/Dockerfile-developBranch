@@ -12,7 +12,7 @@ RUN pip3 install --upgrade pip
 RUN pip3 install --requirement requirements.txt
 
 # Make http port available to the world outside this container (master is 8000)
-EXPOSE 8001
+EXPOSE 8000
 
 # Define environment variables
 ENV QUEUE_PREFIX="dev-"
@@ -25,5 +25,5 @@ ENV MINUTES_TO_WAIT="10"
 #   REDIS_HOSTNAME (optional -- defaults to 'redis')
 #   GRAPHITE_URL (optional -- defaults to 'localhost')
 
-# NOTE: this developBranch listens on 8001 (master on 8000)
-CMD ["gunicorn", "--bind", "0.0.0.0:8001", "enqueueMain:app"]
+# NOTE: this developBranch listens on 8000
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "enqueueMain:app"]
