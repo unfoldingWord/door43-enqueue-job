@@ -173,13 +173,10 @@ def cancel_similar_jobs(payload):
     logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
     logger.info(payload)
     for queue in Queue.all(connection=redis_connection):
-        if not queue or "handler" not in queue.name:
+        if not queue or "handler" not in queue.name or "callback" in queue.name:
             continue
-        logger.info(f"Finding if jobs in {queue.name}  are similiar to the new job.")
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
-        logger.info(f"JOB IDS: {job_ids}")
         for job_id in job_ids:
-            logger.info("EXAMINING JOB ID "+job_id)
             job = queue.fetch_job(job_id)
             if job and len(job.args) > 0:
                 existing_job_payload = job.args[0]
@@ -190,7 +187,6 @@ def cancel_similar_jobs(payload):
                             new_value = reduce(lambda x,y : x[y],field.split("."),payload)
                             old_value = reduce(lambda x,y : x[y],field.split("."),existing_job_payload)
                             similar += [new_value == old_value]
-                            logger.info(f'{job.id}: {field} is {"NOT" if new_value != old_value else ""} similar: {old_value}, {new_value}')
                         except KeyError:
                             pass
                     if all(similar):
@@ -282,8 +278,8 @@ def job_receiver():
         len_djh_queue = len(djh_queue) # Update
         len_djh_scheduled = len(djh_queue.scheduled_job_registry.get_job_ids())
         # len_dcjh_queue = len(dcjh_queue) # Update
-        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes ({datetime.now() + timedelta(minutes=MINUTES_TO_WAIT)})" \
-                    f"({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.now() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
+                    f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
                         f"for {Worker.count(queue=djh_queue)} workers)" \
                     # f"({len_dcjh_queue} jobs now " \
                     #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
