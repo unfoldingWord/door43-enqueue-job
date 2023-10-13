@@ -15,8 +15,10 @@ RUN pip3 install --requirement requirements.txt
 EXPOSE 8001
 
 # Define environment variables
-ENV QUEUE_PREFIX dev-
-ENV DEBUG_MODE True
+ENV QUEUE_PREFIX="dev-"
+ENV DEBUG_MODE="True"
+ENV MINUTES_TO_WAIT="10"
+
 # NOTE: The following environment variables can be set:
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)
 #	DEBUG_MODE True (optional -- defaults to False)

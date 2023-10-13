@@ -15,6 +15,9 @@ RUN pip3 install --requirement requirements.txt
 EXPOSE 8000
 
 # Define environment variables
+ENV MINUTES_TO_WAIT="10"
+
+# Define environment variables
 # (none defined here -- define them in the docker run command)
 # NOTE: The following environment variables must be set:
 #   REDIS_HOSTNAME (defaults to 'redis')

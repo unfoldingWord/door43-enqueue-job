@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import logging
 import boto3
 import watchtower
+from functools import reduce
 
 # Library (PyPI) imports
 from flask import Flask, request, jsonify
@@ -18,6 +19,7 @@ from flask_cors import CORS
 # NOTE: We use StrictRedis() because we don't need the backwards compatibility of Redis()
 from redis import StrictRedis
 from rq import Queue, Worker
+from rq.command import send_stop_job_command
 from statsd import StatsClient # Graphite front-end
 
 
@@ -53,6 +55,12 @@ WEBHOOK_TIMEOUT = '900s' if PREFIX else '600s' # Then a running job (taken out o
     # RJH: 480s fails on UGNT 33,000+ link checks for my slow internet (took 596s)
 CALLBACK_TIMEOUT = '1200s' if PREFIX else '600s' # Then a running callback job (taken out of the queue) will be considered to have failed
     # RJH: 480s fails on UGL upload for my slow internet (600s fails even on mini UGL upload!!!)
+
+MINUTES_TO_WAIT = 10
+try:
+    MINUTES_TO_WAIT = int(getenv('MINUTES_TO_WAIT', '10'))
+except:
+    pass
 
 # Get the redis URL from the environment, otherwise use a local test instance
 REDIS_HOSTNAME = getenv('REDIS_HOSTNAME', 'redis')
@@ -160,6 +168,35 @@ def handle_failed_queue(queue_name:str) -> int:
 # end of handle_failed_queue function
 
 
+# If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
+def cancel_similar_jobs(payload):
+    for queue in Queue.all(connection=redis_connection):
+        if not queue or "door43_job_handler" not in queue.name or "tx_job_handler" not in queue.name:
+            continue
+        logger.info(f"Finding if jobs in {queue.name}  are similiar to the new job.")
+        job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
+        logger.info(f"JOB IDS: {job_ids}")
+        for job_id in job_ids:
+            logger.info("JOB ID "+job_id)
+            job = queue.fetch_job(job_id)
+            if job:
+                logger.info("GOT JOB")
+                existing_job_payload = job.args[1]
+                if payload:
+                    similar = []
+                    for field in ['ref', 'repo.full_name']:
+                        try:
+                            new_value = reduce(lambda x,y : x[y],field.split("."),payload)
+                            old_value = reduce(lambda x,y : x[y],field.split("."),existing_job_payload)
+                            similar += [new_value == old_value]
+                            logger.info(f'{job.id}: {field} is {"NOT" if new_value != old_value else ""} similar: {old_value}, {new_value}')
+                        except KeyError:
+                            pass
+                    if all(similar):
+                        job.cancel()
+                        logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
+
+
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
 @app.route('/'+WEBHOOK_URL_SEGMENT, methods=['POST'])
@@ -232,10 +269,12 @@ def job_receiver():
         response_dict['door43_webhook_retry_count'] = 0 # In case we want to retry failed jobs
         response_dict['door43_webhook_received_at'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ') # Used to calculate total elapsed time
 
+        cancel_similar_jobs(response_dict)
+
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+        djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
