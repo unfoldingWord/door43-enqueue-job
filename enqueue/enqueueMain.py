@@ -484,7 +484,8 @@ def getJob(job_id):
     html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</a></h2>'
     html += f'<h3>{type.capitalize()}: {branch_or_tag}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
-    html += f'Enqued at: {job.enqueued_at}<br/>'
+    if job.enqueued_at:
+        html += f'Enqued at: {job.enqueued_at}{f" ({job.get_position()})" if job.is_queued else ""}<br/>'
     if job.started_at:
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
