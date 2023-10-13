@@ -449,7 +449,7 @@ def status():
 
         html += '</div>'
 
-    html = f'''
+    html += f'''
 <form method="POST" action="../">
     <textarea name="payload" rows=5 cols="50"></textarea>
     <br/><br/>
