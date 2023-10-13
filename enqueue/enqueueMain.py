@@ -496,7 +496,7 @@ def getJob(job_id):
     return html
 
 def get_job_list_html(job):
-    html = f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br/>'
+    html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
     if job.enqueued_at:
         times.append(f'enqued {job.enqueued_at}')
