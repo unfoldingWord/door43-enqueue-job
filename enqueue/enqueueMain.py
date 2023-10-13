@@ -488,7 +488,7 @@ def getJob(job_id):
     if job.started_at:
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
-        html += f'Ended: {job.ended_at} {round((job.ended_at-job.queued_at).total_seconds() / 60)}'
+        html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
 
     html += f'<p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
