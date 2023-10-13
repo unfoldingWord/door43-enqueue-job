@@ -427,7 +427,7 @@ def status():
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {job.args[0]["repository"]["full_name"]}, {job.args[0]["ref"]}</a><br /><br />'
+                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
         html += f'Total {n} Jobs started </p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
@@ -435,7 +435,7 @@ def status():
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {job.args[0]["repository"]["full_name"]}, {job.args[0]["ref"]}</a><br /><br />'
+                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
         html += f'Total {n} Jobs finished</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
@@ -443,7 +443,7 @@ def status():
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {job.args[0]["repository"]["full_name"]}, {job.args[0]["ref"]}</a><br /><br />'
+                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
         html += f'Total {n} Jobs canceled</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
@@ -451,7 +451,7 @@ def status():
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {job.args[0]["repository"]["full_name"]}, {job.args[0]["ref"]}</a><br /><br />'
+                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
         html += f'Total {n} Jobs failed</p><hr /><br />'
 
         html += '</div>'
@@ -485,9 +485,24 @@ def getJob(job_id):
     html += f'<h3><b>{type.capitalize()}:</b> {branch_or_tag}</h3><br/>'
     html += f'<h4><b>Status:</b> {job.get_status()}</h4></br>'
     html += f'<h5><b>Payload:</b>:</h5><br/>'
-    html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2)}</textarea>'
+    html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2) if payload else "Copy payload from a job"}</textarea>'
     html += f'<p><a href="../"><== Go back to queue lists</a></p>'
     return html
+
+
+def get_link_to_dcs(job):
+    if not job or not job.args:
+        return 'INVALID'
+    payload = job.args[0]
+    repo = payload["repository"]["full_name"]
+    ref = payload["ref"]
+    ref_parts = ref.split('/')
+    if ref_parts[1] == "tags":
+        type = "tag"
+    else:
+        type = "branch"
+    branch_or_tag = ref_parts[-1]
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}:{type}:{branch_or_tag}</a>'
 
 
 if __name__ == '__main__':
