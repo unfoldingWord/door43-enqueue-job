@@ -388,7 +388,7 @@ def callback_receiver():
 @app.route('/'+WEBHOOK_URL_SEGMENT+"/status", methods=['GET'])
 def status():
     html = f'''
-<form method="POST">
+<form method="POST" action="../">
     <textarea name="payload" rows=5 cols="50"></textarea>
     <br/>
     <input type="submit" value="Queue Job"/>
