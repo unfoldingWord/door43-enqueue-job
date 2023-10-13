@@ -387,18 +387,7 @@ def callback_receiver():
 
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/", methods=['GET'])
 def status():
-    html = f'''
-<form method="POST" action="../">
-    <textarea name="payload" rows=5 cols="50"></textarea>
-    <br/>
-    <input type="submit" value="Queue Job"/>
-</form>'''
-
-    # if request.method == 'POST':
-    #     job = queue_new_job(delay, payload, is_user_branch, schedule_seconds)
-    #     if job:
-    #         html += f"<p><b>Status:</b> {'Scheduled' if is_user_branch else 'Queued'} new job: {job.id}</p>" 
-
+    html = ""
     queues = Queue.all(connection=redis_connection)
     queues.sort(key=lambda x: x.name, reverse=False)
     for queue in queues:
@@ -411,7 +400,7 @@ def status():
         n = len(queue.get_jobs())
         for job in queue.get_jobs():
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs in queue</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
@@ -419,7 +408,7 @@ def status():
         for id in queue.scheduled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs scheduled </center><p/><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
@@ -427,7 +416,7 @@ def status():
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs started </p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
@@ -435,7 +424,7 @@ def status():
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs finished</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
@@ -443,7 +432,7 @@ def status():
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs canceled</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
@@ -451,10 +440,17 @@ def status():
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+                html += get_job_list_html(job)
         html += f'Total {n} Jobs failed</p><hr /><br />'
 
         html += '</div>'
+
+    html = f'''
+<form method="POST" action="../">
+    <textarea name="payload" rows=5 cols="50"></textarea>
+    <br/><br/>
+    <input type="submit" value="Queue Job"/>
+</form>'''
 
     return html
 
@@ -483,7 +479,13 @@ def getJob(job_id):
     html = f'<h1>JOB ID: {job_id}</h1>'
     html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</a></h2>'
     html += f'<h3>{type.capitalize()}: {branch_or_tag}</h3>'
-    html += f'<h4>Status: {job.get_status()}</h4>'
+    html += f'<p>Status: {job.get_status()}<br/>'
+    html += f'Enqued at: {job.enqueued_at}<br/>'
+    if job.started_at:
+        html += f'Started: {job.started_at}<br/>'
+    if job.ended_at:
+        html += f'Ended: {job.ended_at} {round((job.ended_at-job.queued_at).total_seconds() / 60)}'
+
     html += f'<p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
     html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2) if payload else "Copy payload from a job"}</textarea>'
@@ -492,6 +494,18 @@ def getJob(job_id):
     html += f'<p><a href="../"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
+def get_job_list_html(job):
+    html = f'<a href="job/{id}">{id[:5]}</a>: {get_dcs_link(job)}<br /><br />'
+    times = []
+    if job.enqueued_at:
+        times.append(f'enqued {job.enqueued_at}')
+    if job.started_at:
+        times.append(f'started {job.started_at}')
+    if job.ended_at:
+        times.append(f'ended {job.started_at} ({round((job.ended_at-job.queued_at).total_seconds() / 60)})')
+    if len(times) > 0:
+        html += '; '.join(times)+"<br/>"
+    return html
 
 def get_dcs_link(job):
     if not job or not job.args:
