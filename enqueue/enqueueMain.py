@@ -459,7 +459,7 @@ def status():
     return html
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/", methods=['GET'])
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/<job_id>", methods=['GET'])
 def getJob(job_id):
     queues = Queue.all(connection=redis_connection)
     for queue in queues:
