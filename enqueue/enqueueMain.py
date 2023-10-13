@@ -170,8 +170,11 @@ def handle_failed_queue(queue_name:str) -> int:
 
 # If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
 def cancel_similar_jobs(payload):
+    logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
+    logger.info(payload)
     for queue in Queue.all(connection=redis_connection):
         if not queue or "door43_job_handler" not in queue.name or "tx_job_handler" not in queue.name:
+            logger.info(f"Skipping queue: {queue.name}")
             continue
         logger.info(f"Finding if jobs in {queue.name}  are similiar to the new job.")
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
@@ -195,7 +198,7 @@ def cancel_similar_jobs(payload):
                     if all(similar):
                         job.cancel()
                         logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
-
+# end of cancel_similar_jobs function
 
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
