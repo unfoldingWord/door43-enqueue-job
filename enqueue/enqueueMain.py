@@ -12,6 +12,7 @@ import logging
 import boto3
 import watchtower
 from functools import reduce
+import json
 
 # Library (PyPI) imports
 from flask import Flask, request, jsonify
@@ -383,6 +384,110 @@ def callback_receiver():
     logger.error(f"{PREFIXED_LOGGING_NAME} ignored invalid callback payload; responding with {response_dict}\n")
     return jsonify(response_dict), 400
 # end of callback_receiver()
+
+@app.route('/'+WEBHOOK_URL_SEGMENT+"/status", methods=['GET'])
+def status():
+    html = f'''
+<form method="POST">
+    <textarea name="payload" rows=5 cols="50"></textarea>
+    <br/>
+    <input type="submit" value="Queue Job"/>
+</form>'''
+
+    # if request.method == 'POST':
+    #     job = queue_new_job(delay, payload, is_user_branch, schedule_seconds)
+    #     if job:
+    #         html += f"<p><b>Status:</b> {'Scheduled' if is_user_branch else 'Queued'} new job: {job.id}</p>" 
+
+    queues = Queue.all(connection=redis_connection)
+    queues.sort(key=lambda x: x.name, reverse=False)
+    for queue in queues:
+        if "handle" not in queue.name:
+            continue
+
+        html += f'<div style="float:left; padding-right: 10px"><center><h3>{queue.name} Registries:</h3></center>'
+        
+        html += '<p style="min-height: 100px"><b>Queued Jobs:</b><br/><br/>'
+        n = len(queue.get_jobs())
+        for job in queue.get_jobs():
+            if job:
+                html += f'<a href="job/{job.id}">{job.id}</a><br /><br />'
+        html += f'Total {n} Jobs in queue</p><hr /><br />'
+
+        html += '<p style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
+        n = len(queue.scheduled_job_registry.get_job_ids())
+        for id in queue.scheduled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += f'<a href="job/{id}">{id}: {job.args[1]["repository"]["full_name"]}, {job.args[1]["ref"]}</a><br /><br />'
+        html += f'Total {n} Jobs scheduled </center><p/><hr /><br />'
+
+        html += '<p style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
+        n = len(queue.started_job_registry.get_job_ids())
+        for id in queue.started_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += f'<a href="job/{id}">{id}: {job.args[1]["repository"]["full_name"]}, {job.args[1]["ref"]}</a><br /><br />'
+        html += f'Total {n} Jobs started </p><hr /><br />'
+
+        html += '<p style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
+        n = len(queue.finished_job_registry.get_job_ids())
+        for id in queue.finished_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += f'<a href="job/{id}">{id}: {job.args[1]["repository"]["full_name"]}, {job.args[1]["ref"]}</a><br /><br />'
+        html += f'Total {n} Jobs finished</p><hr /><br />'
+
+        html += '<p style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
+        n = len(queue.canceled_job_registry.get_job_ids())
+        for id in queue.canceled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += f'<a href="job/{id}">{id}: {job.args[1]["repository"]["full_name"]}, {job.args[1]["ref"]}</a><br /><br />'
+        html += f'Total {n} Jobs canceled</p><hr /><br />'
+
+        html += '<p style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
+        n = len(queue.failed_job_registry.get_job_ids())
+        for id in queue.failed_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += f'<a href="job/{id}">{id}: {job.args[1]["repository"]["full_name"]}, {job.args[1]["ref"]}</a><br /><br />'
+        html += f'Total {n} Jobs failed</p><hr /><br />'
+
+        html += '</div>'
+
+    return html
+
+
+@app.route('/'+WEBHOOK_URL_SEGMENT+"/job", methods=['GET'])
+def getJob(job_id):
+    queues = Queue.all(connection=redis_connection)
+    for queue in queues:
+        job = queue.fetch_job(job_id)
+        if job:
+            break
+    if not job:
+        return f"<h1>JOB {job_id} NOT FOUND</h1>"
+    if not job.args or "ref" not in job.args[0] or "repository" not in job.args[0]:
+        return f"<h1>JOB {job_id} IS NOT A TX JOB!</h1>"
+    payload = job.args[0]
+    repo = payload["repository"]["full_name"]
+    ref = payload["ref"]
+    ref_parts = ref.split('/')
+    if ref_parts[1] == "tags":
+        type = "tag"
+    else:
+        type = "branch"
+    branch_or_tag = ref_parts[-1]
+
+    html = f'<h1>JOB: {job_id}</h1><br/>'
+    html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</h2><br/>'
+    html += f'<h3><b>{type.capitalize()}:</b> {branch_or_tag}</h3><br/>'
+    html += f'<h4><b>Status:</b> {job.get_status()}</h4></br>'
+    html += f'<h5><b>Payload:</b>:</h5><br/>'
+    html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2)}</textarea>'
+    html += f'<p><a href="../"><== Go back to queue lists</a></p>'
+    return html
 
 
 if __name__ == '__main__':
