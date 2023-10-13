@@ -170,8 +170,8 @@ def handle_failed_queue(queue_name:str) -> int:
 
 # If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
 def cancel_similar_jobs(payload):
-    for queue in [Queue("door43-job-handler", connection=redis_connection), Queue("translation-job-handler", connection=redis_connection), Queue("translation-job-handler", connection=redis_connection), Queue("translation-job-handler_priority_pdf", connection=redis_connection)]:
-        if not queue:
+    for queue in Queue.all():
+        if not queue or "door43_job_handler" not in queue.name or "tx_job_handler" not in queue.name:
             continue
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
         logger.info(f"JOB IDS: {job_ids}")
