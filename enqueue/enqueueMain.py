@@ -281,10 +281,11 @@ def job_receiver():
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
         len_djh_queue = len(djh_queue) # Update
+        len_djh_scheduled = len(djh_queue.scheduled_job_registry.get_job_ids())
         # len_dcjh_queue = len(dcjh_queue) # Update
         logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes ({datetime.now() + timedelta(minutes=MINUTES_TO_WAIT)})" \
-                    f"({len_djh_queue} jobs now " \
-                        f"for {Worker.count(queue=djh_queue)} workers, " \
+                    f"({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+                        f"for {Worker.count(queue=djh_queue)} workers)" \
                     # f"({len_dcjh_queue} jobs now " \
                     #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
                     # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
