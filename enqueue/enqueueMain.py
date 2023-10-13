@@ -179,11 +179,10 @@ def cancel_similar_jobs(payload):
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
         logger.info(f"JOB IDS: {job_ids}")
         for job_id in job_ids:
-            logger.info("JOB ID "+job_id)
+            logger.info("EXAMINING JOB ID "+job_id)
             job = queue.fetch_job(job_id)
-            if job:
-                logger.info("GOT JOB")
-                existing_job_payload = job.args[1]
+            if job and len(job.args) > 0:
+                existing_job_payload = job.args[0]
                 if payload:
                     similar = []
                     for field in ['ref', 'repo.full_name']:
