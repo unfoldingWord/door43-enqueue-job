@@ -503,11 +503,11 @@ def get_job_list_html(job):
     html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
     if job.enqueued_at:
-        times.append(f'enqued {job.enqueued_at}')
+        times.append(f'enqued {job.enqueued_at.strftime("%Y-%m-%d, %H:%M:%s")}')
     if job.started_at:
-        times.append(f'started {job.started_at}')
+        times.append(f'started {job.started_at.strftime("%Y-%m-%d, %H:%M:%s")}')
     if job.ended_at:
-        times.append(f'ended {job.started_at} ({round((job.ended_at-job.enqueued_at).total_seconds() / 60)})')
+        times.append(f'ended {job.started_at.strftime("%Y-%m-%d, %H:%M:%s")} ({round((job.ended_at-job.enqueued_at).total_seconds() / 60)})')
     if len(times) > 0:
         html += '; '.join(times)
     return html
