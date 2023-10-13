@@ -269,8 +269,10 @@ def job_receiver():
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
+        scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
             djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+            scheduled = True
         else:
             djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker        
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
@@ -278,16 +280,25 @@ def job_receiver():
 
         len_djh_queue = len(djh_queue) # Update
         len_djh_scheduled = len(djh_queue.scheduled_job_registry.get_job_ids())
-        # len_dcjh_queue = len(dcjh_queue) # Update
-        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.now() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
-                    f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
-                        f"for {Worker.count(queue=djh_queue)} workers)" \
-                    # f"({len_dcjh_queue} jobs now " \
-                    #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
-                    # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
-                    # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
-                    )
-
+        if scheduled:
+            # len_dcjh_queue = len(dcjh_queue) # Update
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.utcnownow() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
+                        f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+                            f"for {Worker.count(queue=djh_queue)} workers)" \
+                        # f"({len_dcjh_queue} jobs now " \
+                        #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
+                        # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
+                        # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
+            )
+        else:
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} added to the {djh_adjusted_webhook_queue_name} queue  at {datetime.utcnow()}" \
+                        f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
+                            f"for {Worker.count(queue=djh_queue)} workers)" \
+                        # f"({len_dcjh_queue} jobs now " \
+                        #     f"for {Worker.count(queue=dcjh_queue)} workers, " \
+                        # f"{len_djh_failed_queue} failed jobs) at {datetime.utcnow()}, " \
+                        # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
+            )
         webhook_return_dict = {'success': True,
                                'status': 'queued',
                                'queue_name': djh_adjusted_webhook_queue_name,
