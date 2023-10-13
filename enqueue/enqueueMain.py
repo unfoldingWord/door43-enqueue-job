@@ -485,8 +485,10 @@ def getJob(job_id):
     html += f'<h3>{type.capitalize()}: {branch_or_tag}</h3>'
     html += f'<h4>Status: {job.get_status()}</h4>'
     html += f'<p><b>Payload:</b>'
+    html += f'<form method="POST" action"../../">'
     html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2) if payload else "Copy payload from a job"}</textarea>'
-    html += f'</p>'
+    html += f'<input type="submit" value="Queue again" />'
+    html += f'</form></p>'
     html += f'<p><a href="../"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
