@@ -411,7 +411,7 @@ def status():
         n = len(queue.get_jobs())
         for job in queue.get_jobs():
             if job:
-                html += f'<a href="job/{job.id}">{job.id}</a><br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs in queue</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
@@ -419,7 +419,7 @@ def status():
         for id in queue.scheduled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {job.args[0]["repository"]["full_name"]}, {job.args[0]["ref"]}</a><br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs scheduled </center><p/><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
@@ -427,7 +427,7 @@ def status():
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs started </p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
@@ -435,7 +435,7 @@ def status():
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs finished</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
@@ -443,7 +443,7 @@ def status():
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs canceled</p><hr /><br />'
 
         html += '<p style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
@@ -451,7 +451,7 @@ def status():
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                html += f'<a href="job/{id}">{id}: {get_link_to_dcs(job)}<br /><br />'
+                html += f'<a href="job/{id}">{get_dcs_link(job)}<br /><br />'
         html += f'Total {n} Jobs failed</p><hr /><br />'
 
         html += '</div>'
@@ -490,7 +490,7 @@ def getJob(job_id):
     return html
 
 
-def get_link_to_dcs(job):
+def get_dcs_link(job):
     if not job or not job.args:
         return 'INVALID'
     payload = job.args[0]
