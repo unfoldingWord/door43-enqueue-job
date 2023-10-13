@@ -170,6 +170,8 @@ def handle_failed_queue(queue_name:str) -> int:
 
 # If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
 def cancel_similar_jobs(payload):
+    if not payload or 'repository' not in payload or 'full_name' not in payload['repository'] or 'ref' not in payload:
+        return
     logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
     logger.info(payload)
     for queue in Queue.all(connection=redis_connection):
@@ -179,19 +181,15 @@ def cancel_similar_jobs(payload):
         for job_id in job_ids:
             job = queue.fetch_job(job_id)
             if job and len(job.args) > 0:
-                existing_job_payload = job.args[0]
-                if payload:
-                    similar = []
-                    for field in ['ref', 'repo.full_name']:
+                pl = job.args[0]
+                if pl and 'repository' in pl and 'full_name' in pl['repository'] and 'ref' in pl \
+                    and payload['repository']['full_name'] == pl['repository']['full_name'] and payload['ref'] == pl['ref']:
+                        logger.info(f"Found older job for repo: {pl['repository']['full_name']}, ref: {pl['ref']}")
                         try:
-                            new_value = reduce(lambda x,y : x[y],field.split("."),payload)
-                            old_value = reduce(lambda x,y : x[y],field.split("."),existing_job_payload)
-                            similar += [new_value == old_value]
-                        except KeyError:
+                            job.cancel()
+                            logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
+                        except:
                             pass
-                    if all(similar):
-                        job.cancel()
-                        logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
 # end of cancel_similar_jobs function
 
 # This is the main workhorse part of this code

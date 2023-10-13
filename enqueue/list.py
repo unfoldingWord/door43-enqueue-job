@@ -6,9 +6,12 @@ from functools import reduce
 r = redis.Redis(port=6379, db=0)
 
 def list():
-    for queue in Queue.all(connection=r):
+    queues = Queue.all(connection=r)
+    queues.sort(key=lambda x: x.name, reverse=False)
+    for queue in queues:
+        print("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
         print(f"{queue.name} Registries:")
-        
+
         print(f"Queued Jobs:")
         n = len(queue.get_jobs())
         for job in queue.get_jobs():
