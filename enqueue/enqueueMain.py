@@ -280,7 +280,7 @@ def job_receiver():
 
         len_djh_queue = len(djh_queue) # Update
         # len_dcjh_queue = len(dcjh_queue) # Update
-        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} queued valid job to {djh_adjusted_webhook_queue_name} queue " \
+        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes ({datetime.now() + timedelta(minutes=MINUTES_TO_WAIT)})" \
                     f"({len_djh_queue} jobs now " \
                         f"for {Worker.count(queue=djh_queue)} workers, " \
                     # f"({len_dcjh_queue} jobs now " \
