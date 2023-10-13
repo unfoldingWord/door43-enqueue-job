@@ -385,7 +385,7 @@ def callback_receiver():
     return jsonify(response_dict), 400
 # end of callback_receiver()
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status", methods=['GET'])
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/", methods=['GET'])
 def status():
     html = f'''
 <form method="POST" action="../">
@@ -459,7 +459,7 @@ def status():
     return html
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job", methods=['GET'])
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/", methods=['GET'])
 def getJob(job_id):
     queues = Queue.all(connection=redis_connection)
     for queue in queues:
