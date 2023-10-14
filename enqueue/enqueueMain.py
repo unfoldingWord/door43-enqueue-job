@@ -486,6 +486,7 @@ def getJob(job_id):
     html += f'<p><a href="../"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
+
 def get_job_list_html(job):
     html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
@@ -499,12 +500,13 @@ def get_job_list_html(job):
         html += '; '.join(times)
     return html
 
+
 def get_repo_from_job(job):
     if not job or not job.args:
         return None
     payload = job.args[0]
     if "repo_name" in payload and "repo_owner" in payload:
-        return f'{payload["repo_owner"]}/{payload["repo_name"]}
+        return f'{payload["repo_owner"]}/{payload["repo_name"]}'
     elif "repository" in payload and "full_name" in payload["repository"]:
         return payload["repository"]["full_name"]
 
@@ -525,7 +527,7 @@ def get_ref_type_from_job(job):
         return None
     payload = job.args[0]
     if "repo_ref" in payload and "repo_ref_type" in payload:
-        type = payload["repo_ref_type"]
+        return payload["repo_ref_type"]
     elif "ref" in payload:
         ref_parts = payload["ref"].split("/")
         if ref_parts[1] == "tags":
