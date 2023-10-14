@@ -527,7 +527,7 @@ def get_relative_time(start=None, end=None):
 
 def get_job_list_html(queue_name, job):
     orig_job_id = job.id.split('_')[-1]
-    html = f'<a href="/job/{queue_name}/{job.id}">{orig_job_id[:5]}</a>: {get_dcs_link(job)}<br/>'
+    html = f'<a href="job/{queue_name}/{job.id}">{orig_job_id[:5]}</a>: {get_dcs_link(job)}<br/>'
     if job.ended_at:
         timeago = f'{get_relative_time(job.ended_at)} ago'
         runtime = get_relative_time(job.started_at, job.ended_at)
