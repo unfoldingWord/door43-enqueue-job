@@ -475,7 +475,7 @@ def getJob(queue_name, job_id):
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
     if job.is_failed or job.exc_info:
-        html += f"<div><b>Result:</b><p>{job.exc_info}</p></div>"
+        html += f"<div><b>Result:</b><p><pre>{job.exc_info}</pre></p></div>"
     html += f'<div><p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
     html += f'<textarea cols=200 rows=20>'
