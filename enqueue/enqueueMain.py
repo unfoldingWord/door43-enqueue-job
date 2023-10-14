@@ -273,11 +273,11 @@ def job_receiver():
         #       The timeout value determines the max run time of the worker once the job is accessed
         scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
-            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24), ttl=(60*60*24)) # A function named webhook.job will be called by the worker
+            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled', 1)
             scheduled = True
         else:
-            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24), ttl=(60*60*24)) # A function named webhook.job will be called by the worker        
+            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker        
             stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued', 1)
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
@@ -354,7 +354,7 @@ def callback_receiver():
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id=response_dict['job_id']) # A function named callback.job will be called by the worker
+        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id=response_dict['job_id'], result_ttl=(60*60*24)) # A function named callback.job will be called by the worker
         # NOTE: The above line can return a result from the callback.job function. (By default, the result remains available for 500s.)
 
         # Find out who our workers are
