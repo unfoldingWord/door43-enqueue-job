@@ -390,60 +390,52 @@ def callback_receiver():
 
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/", methods=['GET'])
 def status():
-    Queue()
-    html = ""
-    queues = Queue.all(connection=redis_connection)
-    queues.sort(key=lambda x: x.name, reverse=False)
-    for queue in queues:
-        if "handle" not in queue.name:
-            continue
-
-        queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
-        status_order = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
-        rows = {}
-        for q_name in queue_names:
-            rows[q_name] = {}
-            for status in status_order:
-                rows[q_name][status] = {}
-            queue = Queue(q_name, connection=redis_connection)
-            for id in queue.scheduled_job_registry.get_job_ids():
-                job = queue.fetch_job(id)
-                if job:
-                    rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-            for job in queue.get_jobs():
-                rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-            for id in queue.started_job_registry.get_job_ids():
-                job = queue.fetch_job(id)
-                if job:
-                    rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-            for id in queue.finished_job_registry.get_job_ids():
-                job = queue.fetch_job(id)
-                if job:
-                    rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-            for id in queue.failed_job_registry.get_job_ids():
-                job = queue.fetch_job(id)
-                if job:
-                    rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-            for id in queue.canceled_job_registry.get_job_ids():
-                job = queue.fetch_job(id)
-                if job:
-                    rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
-        html = "<table cellpadding=10 colspacing=10 border=2><tr>"
-        for q_name in queue_names:
-            html += f"<th>{q_name} Queue</th>"
-        html += "</tr>"
+    queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
+    status_order = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
+    rows = {}
+    for q_name in queue_names:
+        queue = Queue(q_name, connection=redis_connection)
+        rows[q_name] = {}
         for status in status_order:
-            html += "<tr>"
-            for q_name in queue_names:
-                html += f"<td><h3>{status.capitalize()} Registery</h3>"
-                keys = rows[q_name][status].keys()
-                sorted(keys)
-                for key in keys:
-                    html += rows[q_name][status][key]
-                html += "</td>"
-            html += "</tr>"
-        html += "</table>"
-    html += f'''<br/><br/><div>
+            rows[q_name][status] = {}
+        for id in queue.scheduled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+        for job in queue.get_jobs():
+            rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+        for id in queue.started_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+        for id in queue.finished_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+        for id in queue.failed_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+        for id in queue.canceled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+    html = "<table cellpadding=10 colspacing=10 border=2><tr>"
+    for q_name in queue_names:
+        html += f"<th>{q_name} Queue</th>"
+    html += "</tr>"
+    for status in status_order:
+        html += "<tr>"
+        for q_name in queue_names:
+            html += f"<td><h3>{status.capitalize()} Registery</h3>"
+            keys = rows[q_name][status].keys()
+            sorted(keys)
+            for key in keys:
+                html += rows[q_name][status][key]
+            html += "</td>"
+        html += "</tr>"
+    html += "</table><br/><br/>"
+    html += f'''<div>
 <form method="POST" action="../" style="display:block;clear:both">
     <textarea name="payload" rows=5 cols="50"></textarea>
     <br/><br/>
