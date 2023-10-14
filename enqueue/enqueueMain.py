@@ -537,7 +537,7 @@ def get_job_list_html(queue_name, job):
         timeago = f'{get_relative_time(job.started_at)} ago'
         html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
     elif job.is_queued:
-        timeago = f'{get_relative_time(job.queued_at)}'
+        timeago = f'{get_relative_time(job.enqueued_at)}'
         html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job.queued_at.strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
     elif job.get_status(True) == "scheduled":
         timeago = f'{get_relative_time(job.created_at)}'
