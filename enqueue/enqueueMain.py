@@ -466,23 +466,11 @@ def getJob(job_id):
         job = queue.fetch_job(job_id)
         if job:
             break
-    if not job:
+    if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND</h1>"
-    if not job.args or "ref" not in job.args[0] or "repository" not in job.args[0]:
-        return f"<h1>JOB {job_id} IS NOT A TX JOB!</h1>"
-    payload = job.args[0]
-    repo = payload["repository"]["full_name"]
-    ref = payload["ref"]
-    ref_parts = ref.split('/')
-    if ref_parts[1] == "tags":
-        type = "tag"
-    else:
-        type = "branch"
-    branch_or_tag = ref_parts[-1]
-
     html = f'<h1>JOB ID: {job_id}</h1>'
-    html += f'<h2><b>REPO:</b> <a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}</a></h2>'
-    html += f'<h3>{type.capitalize()}: {branch_or_tag}</h3>'
+    html += f'<h2><b>REPO:</b> {get_dcs_link(job)}</h2>'
+    html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
     if job.enqueued_at:
         html += f'Enqued at: {job.enqueued_at}{f" ({job.get_position()})" if job.is_queued else ""}<br/>'
@@ -490,10 +478,9 @@ def getJob(job_id):
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
-
     html += f'<p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
-    html += f'<textarea cols=200 rows=20>{json.dumps(payload, indent=2) if payload else "Copy payload from a job"}</textarea>'
+    html += f'<textarea cols=200 rows=20>{json.dumps(job.args[0], indent=2)}</textarea>'
     html += f'<input type="submit" value="Queue again" />'
     html += f'</form></p>'
     html += f'<p><a href="../"><== Go back to queue lists</a></p><br/><br/>'
@@ -512,19 +499,48 @@ def get_job_list_html(job):
         html += '; '.join(times)
     return html
 
-def get_dcs_link(job):
+def get_repo_from_job(job):
     if not job or not job.args:
-        return 'INVALID'
+        return None
     payload = job.args[0]
-    repo = payload["repository"]["full_name"]
-    ref = payload["ref"]
-    ref_parts = ref.split('/')
-    if ref_parts[1] == "tags":
-        type = "tag"
-    else:
-        type = "branch"
-    branch_or_tag = ref_parts[-1]
-    return f'<a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}:{type}:{branch_or_tag}</a>'
+    if "pushing" in payload:
+        return payload["pushing"]
+    elif "repository" in payload and "full_name" in payload["repository"]:
+        return payload["repository"]["full_name"]
+
+  
+def get_ref_from_job(job):  
+    if not job or not job.args:
+        return None
+    payload = job.args[0]
+    if "repo_ref" in payload and "repo_ref_type" in payload:
+        return payload["repo_ref"]
+    elif "ref" in payload:
+        ref_parts = payload["ref"].split("/")
+        return ref_parts[-1]
+
+
+def get_ref_type_from_job(job):
+    if not job or not job.args:
+        return None
+    payload = job.args[0]
+    if "repo_ref" in payload and "repo_ref_type" in payload:
+        type = payload["repo_ref_type"]
+    elif "ref" in payload:
+        ref_parts = payload["ref"].split("/")
+        if ref_parts[1] == "tags":
+            return "tag"
+        else:
+            return "branch"
+
+
+def get_dcs_link(job):
+    repo = get_repo_from_job(job)
+    type = get_ref_type_from_job(job)
+    ref = get_ref_from_job(job)
+    if not repo or not type or not ref:
+        return 'INVALID'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}:{type}:{ref}</a>'
 
 
 if __name__ == '__main__':
