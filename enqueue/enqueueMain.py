@@ -500,7 +500,7 @@ def get_job_list_html(queue_name, job):
     if job.started_at:
         times.append(f'started {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}')
     if job.ended_at:
-        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.enqueued_at).total_seconds() / 60)})')
+        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.created_at).total_seconds() / 60)}min)')
     if len(times) > 0:
         html += '<div style="font-style: italic; color: #929292">'
         html += '<br/>'.join(times)
