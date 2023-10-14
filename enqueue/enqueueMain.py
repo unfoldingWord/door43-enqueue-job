@@ -354,7 +354,7 @@ def callback_receiver():
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id=response_dict['job_id'], result_ttl=(60*60*24)) # A function named callback.job will be called by the worker
+        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id="callback_"+response_dict['job_id'], result_ttl=(60*60*24)) # A function named callback.job will be called by the worker
         # NOTE: The above line can return a result from the callback.job function. (By default, the result remains available for 500s.)
 
         # Find out who our workers are
@@ -460,11 +460,11 @@ def getJob(queue_name, job_id):
     queue = Queue(queue_name, connection=redis_connection)
     job = queue.fetch_job(job_id)
     if not job or not job.args:
-        return f"<h1>JOB {job_id} NOT FOUND</h1>"
+        return f"<h1>JOB {job_id} NOT FOUND IN {queue_name}</h1>"
     repo = get_repo_from_job(job)
     type = get_ref_type_from_job(job)
     ref = get_ref_from_job(job)
-    html = f'<h1>JOB ID: {job_id}</h1>'
+    html = f'<h1>JOB ID: {job_id.split("_")[-1]} ({queue_name})</h1>'
     html += f'<h2><b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}</a></h2>'
     html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
@@ -491,7 +491,7 @@ def getJob(queue_name, job_id):
 
 
 def get_job_list_html(queue_name, job):
-    html = f'<a href="job/{queue_name}/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
+    html = f'<a href="job/{queue_name}/{job.id}">{job.id.split("_")[-1][:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
     if job.created_at:
         times.append(f'created {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}')
@@ -500,10 +500,10 @@ def get_job_list_html(queue_name, job):
     if job.started_at:
         times.append(f'started {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}')
     if job.ended_at:
-        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.enqueued_at).total_seconds() / 60)})')
+        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.created_at).total_seconds() / 60)}min)')
     if len(times) > 0:
         html += '<div style="font-style: italic; color: #929292">'
-        html += ';<br/>'.join(times)
+        html += '<br/>'.join(times)
         html += '</div>'
     return html
 
