@@ -486,7 +486,7 @@ def get_job_list_html(job):
     html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
     if job.created_at:
-        times.append(f'created {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}')
+        times.append(f'created {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}')
     if job.enqueued_at:
         times.append(f'enqued {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}')
     if job.started_at:
