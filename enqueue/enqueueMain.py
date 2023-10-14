@@ -468,7 +468,7 @@ def getJob(job_id):
             break
     if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND</h1>"
-    html = f'<h1>JOB ID: {job_id}</h1>'
+    formhtml = f'<h1>JOB ID: {job_id}</h1>'
     html += f'<h2><b>REPO:</b> {get_dcs_link(job)}</h2>'
     html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
@@ -479,11 +479,12 @@ def getJob(job_id):
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
     try:
-        html += f'<p><b>Payload:</b>'
-        html += f'<form method="POST" action"../../">'
-        html += f'<textarea cols=200 rows=20>{json.dumps(job.args[0], indent=2)}</textarea>'
-        html += f'<input type="submit" value="Queue again" />'
-        html += f'</form></p>'
+        form = f'<p><b>Payload:</b>'
+        form += f'<form method="POST" action"../../">'
+        form += f'<textarea cols=200 rows=20>{json.dumps(job.args[0], indent=2)}</textarea>'
+        form += f'<input type="submit" value="Queue again" />'
+        form += f'</form></p>'
+        html += form
     except:
         pass
     html += f'<p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
