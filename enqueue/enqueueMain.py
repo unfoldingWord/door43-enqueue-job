@@ -468,8 +468,11 @@ def getJob(job_id):
             break
     if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND</h1>"
+    repo = get_repo_from_job(job)
+    type = get_ref_type_from_job(job)
+    ref = get_ref_from_job(job)
     html = f'<h1>JOB ID: {job_id}</h1>'
-    html += f'<h2><b>Repo:</b> {get_dcs_link(job)}</h2>'
+    html += f'<h2><b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}</a></h2>'
     html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
     if job.enqueued_at:
@@ -543,11 +546,10 @@ def get_ref_type_from_job(job):
 
 def get_dcs_link(job):
     repo = get_repo_from_job(job)
-    type = get_ref_type_from_job(job)
     ref = get_ref_from_job(job)
-    if not repo or not type or not ref:
+    if not repo or not ref:
         return 'INVALID'
-    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo} : {type} : {ref}</a>'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo} : {ref}</a>'
 
 
 if __name__ == '__main__':
