@@ -540,7 +540,7 @@ def get_dcs_link(job):
     ref = get_ref_from_job(job)
     if not repo or not type or not ref:
         return 'INVALID'
-    return f'<a href="https://git.door43.org/{repo}/src/{type}/{branch_or_tag}" target="_blank">{repo}:{type}:{ref}</a>'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}:{type}:{ref}</a>'
 
 
 if __name__ == '__main__':
