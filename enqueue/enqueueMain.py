@@ -508,8 +508,6 @@ def get_relative_time(start=None, end=None):
         end = datetime.utcnow()
     if not start:
         start = end
-    print(start, file=sys.stderr)
-    print(end, file=sys.stderr)
     ago = round((end - start).total_seconds())
     print(f"ago: {ago}", file=sys.stderr)
     t = "s"
@@ -538,7 +536,7 @@ def get_job_list_html(queue_name, job):
         html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
     elif job.is_queued:
         timeago = f'{get_relative_time(job.enqueued_at)}'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job.queued_at.strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
     elif job.get_status(True) == "scheduled":
         timeago = f'{get_relative_time(job.created_at)}'
         html += f'<div style="padding-left:5px;font-style:italic;" title="scheduled: {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}">schedued for {timeago}</div>'
