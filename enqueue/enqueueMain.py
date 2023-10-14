@@ -505,7 +505,7 @@ def getJob(queue_name, job_id):
 
 def get_relative_time(start=None, end=None):
     if not end:
-        end = datetime.datetime.utcnow()
+        end = datetime.utcnow()
     if not start:
         start = end
     print(start, file=sys.stderr)
