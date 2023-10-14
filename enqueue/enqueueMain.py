@@ -478,15 +478,16 @@ def getJob(job_id):
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
+    html += f'<p><b>Payload:</b>'
+    html += f'<form method="POST" action"../../">'
+    html += f'<textarea cols=200 rows=20>'
     try:
-        form = f'<p><b>Payload:</b>'
-        form += f'<form method="POST" action"../../">'
-        form += f'<textarea cols=200 rows=20>{json.dumps(job.args[0], indent=2)}</textarea>'
-        form += f'<input type="submit" value="Queue again" />'
-        form += f'</form></p>'
-        html += form
+        html += json.dumps(job.args[0], indent=2)
     except:
         pass
+    html += f'</textarea>'
+    html += f'<input type="submit" value="Queue again" />'
+    html += f'</form></p>'
     html += f'<p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
