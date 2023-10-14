@@ -399,53 +399,53 @@ def status():
 
         html += f'<div style="float:left;margin-right:10px;max-width:300px;border:solid 1px gray;"><center><h3>{queue.name} Registries:</h3></center>'
         
-        html += '<p style="min-height: 100px"><b>Queued Jobs:</b><br/><br/>'
+        html += '<div style="min-height: 100px"><b>Queued Jobs:</b><br/><br/>'
         n = len(queue.get_jobs())
         for job in queue.get_jobs():
             if job:
                 html += get_job_list_html(job)
-        html += f'Total {n} Jobs in queue</p><hr /><br />'
+        html += f'Total {n} Jobs in queue</div><hr /><br />'
 
-        html += '<p style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
+        html += '<div style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
         n = len(queue.scheduled_job_registry.get_job_ids())
         for id in queue.scheduled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 html += get_job_list_html(job)+"<br/>"
-        html += f'Total {n} Jobs scheduled </center><p/><hr /><br />'
+        html += f'Total {n} Jobs scheduled </center></div><hr /><br />'
 
-        html += '<p style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
+        html += '<div style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
         n = len(queue.started_job_registry.get_job_ids())
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 html += get_job_list_html(job)+f" (worker: {job.worker_name})<br/>"
-        html += f'Total {n} Jobs started </p><hr /><br />'
+        html += f'Total {n} Jobs started </div><hr /><br />'
 
-        html += '<p style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
+        html += '<div style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
         n = len(queue.finished_job_registry.get_job_ids())
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 html += get_job_list_html(job)+"<br/>"
-        html += f'Total {n} Jobs finished</p><hr /><br />'
+        html += f'Total {n} Jobs finished</div><hr /><br />'
 
-        html += '<p style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
+        html += '<div style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
         n = len(queue.canceled_job_registry.get_job_ids())
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 html += get_job_list_html(job)+"<br/>"
-        html += f'Total {n} Jobs canceled</p><hr /><br />'
+        html += f'Total {n} Jobs canceled</div><hr /><br />'
 
-        html += '<p style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
+        html += '<div style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
         n = len(queue.failed_job_registry.get_job_ids())
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 job.created_at
                 html += get_job_list_html(job)+"<br/>"
-        html += f'Total {n} Jobs failed</p>'
+        html += f'Total {n} Jobs failed</div>'
 
         html += '</div>'
 
