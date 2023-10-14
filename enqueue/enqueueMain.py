@@ -439,8 +439,7 @@ def status():
         html += '<tr>'
         for q_name in queue_names:
             html += f'<td style="vertical-align:top"><h3>{status.capitalize()} Registery</h3>'
-            keys = rows[q_name][status].keys()
-            sorted(keys, reverse=True)
+            keys = sorted(rows[q_name][status].keys(), reverse=True)
             for key in keys:
                 html += rows[q_name][status][key]
             html += '</td>'
