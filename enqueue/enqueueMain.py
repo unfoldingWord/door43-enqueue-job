@@ -464,7 +464,8 @@ def getJob(queue_name, job_id):
     repo = get_repo_from_job(job)
     type = get_ref_type_from_job(job)
     ref = get_ref_from_job(job)
-    html = f'<h1>JOB ID: {job_id.split("_")[-1]} ({queue_name})</h1>'
+    html = f'<p><a href="../../" style="text-decoration:none"><- Go back</a></p>' 
+    html += f'<h1>JOB ID: {job_id.split("_")[-1]} ({queue_name})</h1>'
     html += f'<h2><b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}</a></h2>'
     html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
@@ -484,9 +485,9 @@ def getJob(queue_name, job_id):
     except:
         pass
     html += f'</textarea>'
-    html += f'<input type="submit" value="Queue again" />'
+    html += f'<br/><br/><input type="submit" value="Queue again" />'
     html += f'</form></p></div>'
-    html += f'<br/><br/><p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
+    html += f'<br/><br/>'
     return html
 
 
@@ -549,7 +550,7 @@ def get_dcs_link(job):
     type = get_ref_type_from_job(job)
     if not repo or not ref:
         return 'INVALID'
-    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo} : {ref}</a>'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo.split("/")[-1]}=>{ref}</a>'
 
 
 if __name__ == '__main__':
