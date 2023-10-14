@@ -547,6 +547,7 @@ def get_ref_type_from_job(job):
 def get_dcs_link(job):
     repo = get_repo_from_job(job)
     ref = get_ref_from_job(job)
+    type = get_ref_type_from_job(job)
     if not repo or not ref:
         return 'INVALID'
     return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo} : {ref}</a>'
