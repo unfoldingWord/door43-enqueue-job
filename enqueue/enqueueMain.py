@@ -397,7 +397,7 @@ def status():
         if "handle" not in queue.name:
             continue
 
-        html += f'<div style="float:left; padding-right: 10px"><center><h3>{queue.name} Registries:</h3></center>'
+        html += f'<div style="float:left;margin-right:10px;max-width:300px;border:solid 1px gray;"><center><h3>{queue.name} Registries:</h3></center>'
         
         html += '<p style="min-height: 100px"><b>Queued Jobs:</b><br/><br/>'
         n = len(queue.get_jobs())
@@ -445,7 +445,7 @@ def status():
             if job:
                 job.created_at
                 html += get_job_list_html(job)+"<br/>"
-        html += f'Total {n} Jobs failed</p><hr /><br />'
+        html += f'Total {n} Jobs failed</p>'
 
         html += '</div>'
 
