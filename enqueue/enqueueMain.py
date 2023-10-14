@@ -449,12 +449,12 @@ def status():
 
         html += '</div>'
 
-    html += f'''
+    html += f'''<br/><br/><div>
 <form method="POST" action="../">
     <textarea name="payload" rows=5 cols="50"></textarea>
     <br/><br/>
     <input type="submit" value="Queue Job"/>
-</form>'''
+</form></div>'''
 
     return html
 
