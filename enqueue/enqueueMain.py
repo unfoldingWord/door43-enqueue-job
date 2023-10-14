@@ -503,22 +503,48 @@ def getJob(queue_name, job_id):
     html += f'<br/><br/>'
     return html
 
+def get_relative_time(start=None, end=None):
+    if not end:
+        end = datetime.datetime.utcnow()
+    if not start:
+        start = end
+    print(start, file=sys.stderr)
+    print(end, file=sys.stderr)
+    ago = round((end - start).total_seconds())
+    print(f"ago: {ago}", file=sys.stderr)
+    t = "s"
+    if ago > 120:
+        ago = round(ago / 60)
+        t = "m"
+        if ago > 120:
+            ago = round(ago / 60)
+            t = "h"
+            if ago > 48:
+                ago = round(ago / 24)
+                t = "d"
+    return f"{ago}{t}"
+
 
 def get_job_list_html(queue_name, job):
-    html = f'<a href="job/{queue_name}/{job.id}">{job.id.split("_")[-1][:5]}</a>: {get_dcs_link(job)}<br/>'
-    times = []
-    if job.created_at:
-        times.append(f'created {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}')
-    if job.enqueued_at:
-        times.append(f'enqued {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}')
-    if job.started_at:
-        times.append(f'started {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}')
+    orig_job_id = job.id.split('_')[-1]
+    html = f'<a href="/job/{queue_name}/{job.id}">{orig_job_id[:5]}</a>: {get_dcs_link(job)}<br/>'
     if job.ended_at:
-        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.created_at).total_seconds() / 60)}min)')
-    if len(times) > 0:
-        html += '<div style="font-style: italic; color: #929292">'
-        html += '<br/>'.join(times)
-        html += '</div>'
+        timeago = f'{get_relative_time(job.ended_at)} ago'
+        runtime = get_relative_time(job.started_at, job.ended_at)
+        end_word = "canceled" if job.is_canceled else "failed" if job.is_failed else "finished"
+        html += f'<div style="padding-left:5px;font-style:italic;" title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}; {end_word}: {job.ended_at.strftime("%Y-%m-%d %H:%M:%S")}">ran for {runtime}, {end_word} {timeago}</div>'
+    elif job.is_started:
+        timeago = f'{get_relative_time(job.started_at)} ago'
+        html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
+    elif job.is_queued:
+        timeago = f'{get_relative_time(job.queued_at)}'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job.queued_at.strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
+    elif job.get_status(True) == "scheduled":
+        timeago = f'{get_relative_time(job.created_at)}'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="scheduled: {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}">schedued for {timeago}</div>'
+    else:
+        timeago = f'{get_relative_time(job.created_at)} ago'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="created: {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}">created {timeago}, status: {job.get_status()}</div>'
     return html
 
 
