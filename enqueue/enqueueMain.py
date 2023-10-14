@@ -448,7 +448,7 @@ def status():
     html += "</table><br/><br/>"
     html += f'''<div>
 <form method="POST" action="../" style="display:block;clear:both">
-    <textarea name="payload" rows=5 cols="50">{json.dumps(last_job.args[0]) if last_job else ""}</textarea>
+    <textarea name="payload" rows=5 cols="50">{json.dumps(last_job.args[0], indent=2) if last_job else ""}</textarea>
     <br/><br/>
     <input type="submit" value="Queue Job"/>
 </form></div>'''
