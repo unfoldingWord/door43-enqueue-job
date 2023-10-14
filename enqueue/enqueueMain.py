@@ -188,7 +188,7 @@ def cancel_similar_jobs(payload):
                         logger.info(f"Found older job for repo: {pl['repository']['full_name']}, ref: {pl['ref']}")
                         try:
                             job.cancel()
-                            stats_client.incr(f'{enqueue_job_stats_prefix}.canceled', 1)
+                            stats_client.incr(f'{enqueue_job_stats_prefix}.canceled')
                             logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
                         except:
                             pass
@@ -274,11 +274,11 @@ def job_receiver():
         scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
             djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
-            stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled', 1)
+            stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
         else:
             djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker        
-            stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued', 1)
+            stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued')
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
