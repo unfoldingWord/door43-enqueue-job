@@ -503,8 +503,8 @@ def get_repo_from_job(job):
     if not job or not job.args:
         return None
     payload = job.args[0]
-    if "pushing" in payload:
-        return payload["pushing"]
+    if "repo_name" in payload and "repo_owner" in payload:
+        return f'{payload["repo_owner"]}/{payload["repo_name"]}
     elif "repository" in payload and "full_name" in payload["repository"]:
         return payload["repository"]["full_name"]
 
