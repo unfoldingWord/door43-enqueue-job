@@ -393,6 +393,7 @@ def status():
     queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
     status_order = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
     rows = {}
+    last_job = None
     for q_name in queue_names:
         queue = Queue(q_name, connection=redis_connection)
         rows[q_name] = {}
@@ -402,20 +403,30 @@ def status():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
+                if q_name == queue_names[0]:
+                    last_job = job
         for job in queue.get_jobs():
             rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
+            if q_name == queue_names[0]:
+                last_job = job
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
+                if q_name == queue_names[0]:
+                    last_job = job
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
+                if q_name == queue_names[0]:
+                    last_job = job
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
+                if q_name == queue_names[0]:
+                    last_job = job
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
@@ -437,7 +448,7 @@ def status():
     html += "</table><br/><br/>"
     html += f'''<div>
 <form method="POST" action="../" style="display:block;clear:both">
-    <textarea name="payload" rows=5 cols="50"></textarea>
+    <textarea name="payload" rows=5 cols="50">{json.dumps(last_job.args[0]) if last_job else ""}</textarea>
     <br/><br/>
     <input type="submit" value="Queue Job"/>
 </form></div>'''
@@ -463,8 +474,8 @@ def getJob(queue_name, job_id):
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
-    if job.is_failed:
-        html += f"<div><b>Latest Result</b><p>{job.latest_result()}</p></div>"
+    if job.is_failed or job.exc_info:
+        html += f"<div><b>Result</b><p>{job.exc_info}</p></div>"
     html += f'<div><p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
     html += f'<textarea cols=200 rows=20>'
