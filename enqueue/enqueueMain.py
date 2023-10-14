@@ -431,7 +431,7 @@ def status():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-    html = '<table cellpadding=10 colspacing=10 border=2><tr>'
+    html = '<table cellpadding="10" colspacing="10" border="2"><tr>'
     for q_name in queue_names:
         html += f'<th>{q_name} queue</th>'
     html += '</tr>'
@@ -446,12 +446,6 @@ def status():
             html += '</td>'
         html += '</tr>'
     html += '</table><br/><br/>'
-    html += f'''<div>
-<form method="POST" action="../" style="display:block;clear:both">
-    <textarea name="payload" rows=5 cols="50">{json.dumps(last_job.args[0], indent=2) if last_job else ""}</textarea>
-    <br/><br/>
-    <input type="submit" value="Queue Job"/>
-</form></div>'''
     return html
 
 
@@ -478,14 +472,34 @@ def getJob(queue_name, job_id):
     if job.is_failed or job.exc_info:
         html += f"<div><b>Result:</b><p><pre>{job.exc_info}</pre></p></div>"
     html += f'<div><p><b>Payload:</b>'
-    html += f'<form method="POST" action"../../">'
-    html += f'<textarea cols=200 rows=20>'
+    html += f'<form>'
+    html += f'<textarea id="payload" cols="200" rows="20" id="payload">'
     try:
         html += json.dumps(job.args[0], indent=2)
     except:
         pass
     html += f'</textarea>'
-    html += f'<br/><br/><input type="submit" value="Queue again" />'
+    if queue_name == PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME:
+        html += '''<br/><br/>
+    <input type="button" value="Re-Queue Job" onClick="submitForm()"/>
+<script type="text/javascript">
+    function submitForm() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "../..", true);
+        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        xhr.setRequestHeader('X-Gitea-Event', 'push');
+        xhr.setRequestHeader('X-Gitea-Event-Type', 'push')
+        var input = document.getElementById("payload");
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) {
+                alert(xhr.response);
+                console.log(xhr.response);
+            }
+        };
+        console.log(xhr.send(payload.value));
+    }
+</script>
+'''
     html += f'</form></p></div>'
     html += f'<br/><br/>'
     return html
