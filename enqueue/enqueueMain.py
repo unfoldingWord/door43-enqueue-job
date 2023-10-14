@@ -401,25 +401,25 @@ def status():
         for id in queue.scheduled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+                rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
         for job in queue.get_jobs():
-            rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+            rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+                rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+                rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+                rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
-                rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(job)
+                rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
     html = "<table cellpadding=10 colspacing=10 border=2><tr>"
     for q_name in queue_names:
         html += f"<th>{q_name} Queue</th>"
@@ -444,13 +444,10 @@ def status():
     return html
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/<job_id>", methods=['GET'])
-def getJob(job_id):
-    queues = Queue.all(connection=redis_connection)
-    for queue in queues:
-        job = queue.fetch_job(job_id)
-        if job:
-            break
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/<queue_name>/<job_id>", methods=['GET'])
+def getJob(queue_name, job_id):
+    queue = Queue(queue_name, connection=redis_connection)
+    job = queue.fetch_job(job_id)
     if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND</h1>"
     repo = get_repo_from_job(job)
@@ -482,8 +479,8 @@ def getJob(job_id):
     return html
 
 
-def get_job_list_html(job):
-    html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
+def get_job_list_html(queue_name, job):
+    html = f'<a href="job/{queue_name}/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
     times = []
     if job.created_at:
         times.append(f'created {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}')
