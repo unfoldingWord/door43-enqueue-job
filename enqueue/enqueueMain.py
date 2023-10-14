@@ -431,21 +431,21 @@ def status():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-    html = "<table cellpadding=10 colspacing=10 border=2><tr>"
+    html = '<table cellpadding=10 colspacing=10 border=2><tr>'
     for q_name in queue_names:
-        html += f"<th>{q_name} queue</th>"
-    html += "</tr>"
+        html += f'<th>{q_name} queue</th>'
+    html += '</tr>'
     for status in status_order:
-        html += "<tr>"
+        html += '<tr>'
         for q_name in queue_names:
-            html += f"<td><h3>{status.capitalize()} Registery</h3>"
+            html += f'<td style="vertical-align:top"><h3>{status.capitalize()} Registery</h3>'
             keys = rows[q_name][status].keys()
             sorted(keys)
             for key in keys:
                 html += rows[q_name][status][key]
-            html += "</td>"
-        html += "</tr>"
-    html += "</table><br/><br/>"
+            html += '</td>'
+        html += '</tr>'
+    html += '</table><br/><br/>'
     html += f'''<div>
 <form method="POST" action="../" style="display:block;clear:both">
     <textarea name="payload" rows=5 cols="50">{json.dumps(last_job.args[0], indent=2) if last_job else ""}</textarea>
