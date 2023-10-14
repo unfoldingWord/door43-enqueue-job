@@ -485,7 +485,7 @@ def getJob(queue_name, job_id):
 <script type="text/javascript">
     function submitForm() {
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "../..", true);
+        xhr.open("POST", "../../../", true);
         xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
         xhr.setRequestHeader('X-Gitea-Event', 'push');
         xhr.setRequestHeader('X-Gitea-Event-Type', 'push')
