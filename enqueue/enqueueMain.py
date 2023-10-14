@@ -132,6 +132,8 @@ enqueue_callback_job_stats_prefix = f"{stats_prefix}.enqueue-callback-job"
 enqueue_catalog_job_stats_prefix = f"{stats_prefix}.enqueue-catalog-job"
 stats_client = StatsClient(host=graphite_url, port=8125)
 
+queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
+
 
 app = Flask(__name__)
 if PREFIX:
@@ -170,22 +172,29 @@ def handle_failed_queue(queue_name:str) -> int:
 
 
 # If a job has the same repo.full_name and ref that is already scheduled or queued, we cancel it so this one takes precedence
-def cancel_similar_jobs(payload):
-    if not payload or 'repository' not in payload or 'full_name' not in payload['repository'] or 'ref' not in payload:
+def cancel_similar_jobs(incoming_payload):
+    if not incoming_payload or 'repository' not in incoming_payload or 'full_name' not in incoming_payload['repository'] or 'ref' not in incoming_payload:
         return
     logger.info("Checking if similar jobs already exist further up the queue to cancel them...")
-    logger.info(payload)
-    for queue in Queue.all(connection=redis_connection):
-        if not queue or "handler" not in queue.name or "callback" in queue.name:
+    logger.info(incoming_payload)
+    my_repo = get_repo_from_payload(incoming_payload)
+    my_ref = get_ref_from_payload(incoming_payload)
+    if not my_repo or not my_ref:
+        return
+    for queue_name in queue_names:
+        # Don't want to cancel anything being called back - let it happen
+        if queue_name == PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME:
             continue
+        queue = Queue(queue_name, connection=redis_connection)
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
         for job_id in job_ids:
             job = queue.fetch_job(job_id)
             if job and len(job.args) > 0:
                 pl = job.args[0]
-                if pl and 'repository' in pl and 'full_name' in pl['repository'] and 'ref' in pl \
-                    and payload['repository']['full_name'] == pl['repository']['full_name'] and payload['ref'] == pl['ref']:
-                        logger.info(f"Found older job for repo: {pl['repository']['full_name']}, ref: {pl['ref']}")
+                old_repo = get_repo_from_payload(pl)
+                old_ref = get_ref_from_payload(pl)
+                if my_repo == old_repo and my_ref == old_ref:
+                        logger.info(f"Found older job for repo: {old_repo}, ref: {old_ref}")
                         try:
                             job.cancel()
                             stats_client.incr(f'{enqueue_job_stats_prefix}.canceled')
@@ -277,7 +286,7 @@ def job_receiver():
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
         else:
-            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker        
+            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued')
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
@@ -390,7 +399,6 @@ def callback_receiver():
 
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/", methods=['GET'])
 def status():
-    queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
     status_order = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
     rows = {}
     last_job = None
@@ -454,9 +462,9 @@ def getJob(queue_name, job_id):
     job = queue.fetch_job(job_id)
     if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND IN {queue_name}</h1>"
-    repo = get_repo_from_job(job)
-    type = get_ref_type_from_job(job)
-    ref = get_ref_from_job(job)
+    repo = get_repo_from_payload(job.args[0]) if job.args else 'UNKNOWN REPO'
+    type = get_ref_type_from_payload(job.args[0]) if job.args else 'branch'
+    ref = get_ref_from_payload(job.args[0]) if job.args else 'master'
     html = f'<p><a href="../../" style="text-decoration:none"><- Go back</a></p>'
     html += f'<h1>JOB ID: {job_id.split("_")[-1]} ({queue_name})</h1>'
     html += f'<h2><b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}</a></h2>'
@@ -546,31 +554,26 @@ def get_job_list_html(queue_name, job):
     return html
 
 
-def get_repo_from_job(job):
-    if not job or not job.args:
-        return None
-    payload = job.args[0]
+def get_repo_from_payload(payload):
     if "repo_name" in payload and "repo_owner" in payload:
         return f'{payload["repo_owner"]}/{payload["repo_name"]}'
     elif "repository" in payload and "full_name" in payload["repository"]:
         return payload["repository"]["full_name"]
-
-  
-def get_ref_from_job(job):  
-    if not job or not job.args:
+    else:
         return None
-    payload = job.args[0]
+
+
+def get_ref_from_payload(payload):
     if "repo_ref" in payload and "repo_ref_type" in payload:
         return payload["repo_ref"]
     elif "ref" in payload:
         ref_parts = payload["ref"].split("/")
         return ref_parts[-1]
+    else:
+        return 'master'
 
 
-def get_ref_type_from_job(job):
-    if not job or not job.args:
-        return None
-    payload = job.args[0]
+def get_ref_type_from_payload(payload):
     if "repo_ref" in payload and "repo_ref_type" in payload:
         return payload["repo_ref_type"]
     elif "ref" in payload:
@@ -579,13 +582,15 @@ def get_ref_type_from_job(job):
             return "tag"
         else:
             return "branch"
+    else:
+        return 'branch'
 
 
 def get_dcs_link(job):
-    repo = get_repo_from_job(job)
-    ref = get_ref_from_job(job)
-    type = get_ref_type_from_job(job)
-    if not repo or not ref:
+    repo = get_repo_from_payload(job.args[0]) if job.args else None
+    type = get_ref_type_from_payload(job.args[0]) if job.args else 'branch'
+    ref = get_ref_from_payload(job.args[0]) if job.args else 'master'
+    if not repo:
         return 'INVALID'
     return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo.split("/")[-1]}=>{ref}</a>'
 
