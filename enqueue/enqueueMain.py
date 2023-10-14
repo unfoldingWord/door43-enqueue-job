@@ -20,6 +20,7 @@ from flask_cors import CORS
 # NOTE: We use StrictRedis() because we don't need the backwards compatibility of Redis()
 from redis import StrictRedis
 from rq import Queue, Worker
+from rq.registry import FailedJobRegistry
 from rq.command import send_stop_job_command
 from statsd import StatsClient # Graphite front-end
 
@@ -481,7 +482,9 @@ def getJob(job_id):
         html += f'Started: {job.started_at}<br/>'
     if job.ended_at:
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
-    html += f'<p><b>Payload:</b>'
+    if job.is_failed:
+        html += f"<div><b>Latest Result</b><p>{job.latest_result()}</p></div>"
+    html += f'<div><p><b>Payload:</b>'
     html += f'<form method="POST" action"../../">'
     html += f'<textarea cols=200 rows=20>'
     try:
@@ -490,8 +493,8 @@ def getJob(job_id):
         pass
     html += f'</textarea>'
     html += f'<input type="submit" value="Queue again" />'
-    html += f'</form></p>'
-    html += f'<p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
+    html += f'</form></p></div>'
+    html += f'<br/><br/><p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
     return html
 
 
