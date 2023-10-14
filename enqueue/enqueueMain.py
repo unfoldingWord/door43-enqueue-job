@@ -450,7 +450,7 @@ def status():
         html += '</div>'
 
     html += f'''<br/><br/><div>
-<form method="POST" action="../">
+<form method="POST" action="../" style="display:block;clear:both">
     <textarea name="payload" rows=5 cols="50"></textarea>
     <br/><br/>
     <input type="submit" value="Queue Job"/>
