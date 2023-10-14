@@ -16,7 +16,7 @@ def list():
         n = len(queue.get_jobs())
         for job in queue.get_jobs():
             if job:
-                print(f"{job.id}")
+                print(f"{job.id}: {job.is_queued}")
         print(f"Total {n} Jobs in queue\n")
 
         print(f"Scheduled Jobs:")

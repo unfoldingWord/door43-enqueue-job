@@ -12,6 +12,7 @@ import logging
 import boto3
 import watchtower
 from functools import reduce
+import json
 
 # Library (PyPI) imports
 from flask import Flask, request, jsonify
@@ -187,6 +188,7 @@ def cancel_similar_jobs(payload):
                         logger.info(f"Found older job for repo: {pl['repository']['full_name']}, ref: {pl['ref']}")
                         try:
                             job.cancel()
+                            stats_client.incr(f'{enqueue_job_stats_prefix}.canceled', 1)
                             logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
                         except:
                             pass
@@ -272,9 +274,11 @@ def job_receiver():
         scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
             djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
+            stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled', 1)
             scheduled = True
         else:
             djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker        
+            stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued', 1)
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
@@ -383,6 +387,170 @@ def callback_receiver():
     logger.error(f"{PREFIXED_LOGGING_NAME} ignored invalid callback payload; responding with {response_dict}\n")
     return jsonify(response_dict), 400
 # end of callback_receiver()
+
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/", methods=['GET'])
+def status():
+    html = ""
+    queues = Queue.all(connection=redis_connection)
+    queues.sort(key=lambda x: x.name, reverse=False)
+    for queue in queues:
+        if "handle" not in queue.name:
+            continue
+
+        html += f'<div style="float:left;margin-right:10px;max-width:300px;border:solid 1px gray;"><center><h3>{queue.name} Registries:</h3></center>'
+        
+        html += '<div style="min-height: 100px"><b>Queued Jobs:</b><br/><br/>'
+        n = len(queue.get_jobs())
+        for job in queue.get_jobs():
+            if job:
+                html += get_job_list_html(job)
+        html += f'Total {n} Jobs in queue</div><hr /><br />'
+
+        html += '<div style="min-height: 100px"><b>Scheduled Jobs:</b><br /><br />'
+        n = len(queue.scheduled_job_registry.get_job_ids())
+        for id in queue.scheduled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += get_job_list_html(job)+"<br/>"
+        html += f'Total {n} Jobs scheduled </center></div><hr /><br />'
+
+        html += '<div style="min-height: 100px"><b>Started Jobs:</b><br /><br />'
+        n = len(queue.started_job_registry.get_job_ids())
+        for id in queue.started_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += get_job_list_html(job)+f" (worker: {job.worker_name})<br/>"
+        html += f'Total {n} Jobs started </div><hr /><br />'
+
+        html += '<div style="min-height: 100px"><b>Finished Jobs:</b><br /><br />'
+        n = len(queue.finished_job_registry.get_job_ids())
+        for id in queue.finished_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += get_job_list_html(job)+"<br/>"
+        html += f'Total {n} Jobs finished</div><hr /><br />'
+
+        html += '<div style="min-height: 100px"><b>Canceled Jobs:</b><br /><br />'
+        n = len(queue.canceled_job_registry.get_job_ids())
+        for id in queue.canceled_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                html += get_job_list_html(job)+"<br/>"
+        html += f'Total {n} Jobs canceled</div><hr /><br />'
+
+        html += '<div style="min-height: 100px"><b>Failed Jobs:</b><br /><br />'
+        n = len(queue.failed_job_registry.get_job_ids())
+        for id in queue.failed_job_registry.get_job_ids():
+            job = queue.fetch_job(id)
+            if job:
+                job.created_at
+                html += get_job_list_html(job)+"<br/>"
+        html += f'Total {n} Jobs failed</div>'
+
+        html += '</div>'
+
+    html += f'''<br/><br/><div>
+<form method="POST" action="../" style="display:block;clear:both">
+    <textarea name="payload" rows=5 cols="50"></textarea>
+    <br/><br/>
+    <input type="submit" value="Queue Job"/>
+</form></div>'''
+
+    return html
+
+
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/<job_id>", methods=['GET'])
+def getJob(job_id):
+    queues = Queue.all(connection=redis_connection)
+    for queue in queues:
+        job = queue.fetch_job(job_id)
+        if job:
+            break
+    if not job or not job.args:
+        return f"<h1>JOB {job_id} NOT FOUND</h1>"
+    repo = get_repo_from_job(job)
+    type = get_ref_type_from_job(job)
+    ref = get_ref_from_job(job)
+    html = f'<h1>JOB ID: {job_id}</h1>'
+    html += f'<h2><b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo}</a></h2>'
+    html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
+    html += f'<p>Status: {job.get_status()}<br/>'
+    if job.enqueued_at:
+        html += f'Enqued at: {job.enqueued_at}{f" ({job.get_position()})" if job.is_queued else ""}<br/>'
+    if job.started_at:
+        html += f'Started: {job.started_at}<br/>'
+    if job.ended_at:
+        html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
+    html += f'<p><b>Payload:</b>'
+    html += f'<form method="POST" action"../../">'
+    html += f'<textarea cols=200 rows=20>'
+    try:
+        html += json.dumps(job.args[0], indent=2)
+    except:
+        pass
+    html += f'</textarea>'
+    html += f'<input type="submit" value="Queue again" />'
+    html += f'</form></p>'
+    html += f'<p><a href="../" style="text-decoration:none"><== Go back to queue lists</a></p><br/><br/>'
+    return html
+
+
+def get_job_list_html(job):
+    html = f'<a href="job/{job.id}">{job.id[:5]}</a>: {get_dcs_link(job)}<br/>'
+    times = []
+    if job.enqueued_at:
+        times.append(f'enqued {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}')
+    if job.started_at:
+        times.append(f'started {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}')
+    if job.ended_at:
+        times.append(f'ended {job.started_at.strftime("%Y-%m-%d %H:%M:%S")} ({round((job.ended_at-job.enqueued_at).total_seconds() / 60)})')
+    if len(times) > 0:
+        html += '; '.join(times)
+    return html
+
+
+def get_repo_from_job(job):
+    if not job or not job.args:
+        return None
+    payload = job.args[0]
+    if "repo_name" in payload and "repo_owner" in payload:
+        return f'{payload["repo_owner"]}/{payload["repo_name"]}'
+    elif "repository" in payload and "full_name" in payload["repository"]:
+        return payload["repository"]["full_name"]
+
+  
+def get_ref_from_job(job):  
+    if not job or not job.args:
+        return None
+    payload = job.args[0]
+    if "repo_ref" in payload and "repo_ref_type" in payload:
+        return payload["repo_ref"]
+    elif "ref" in payload:
+        ref_parts = payload["ref"].split("/")
+        return ref_parts[-1]
+
+
+def get_ref_type_from_job(job):
+    if not job or not job.args:
+        return None
+    payload = job.args[0]
+    if "repo_ref" in payload and "repo_ref_type" in payload:
+        return payload["repo_ref_type"]
+    elif "ref" in payload:
+        ref_parts = payload["ref"].split("/")
+        if ref_parts[1] == "tags":
+            return "tag"
+        else:
+            return "branch"
+
+
+def get_dcs_link(job):
+    repo = get_repo_from_job(job)
+    ref = get_ref_from_job(job)
+    type = get_ref_type_from_job(job)
+    if not repo or not ref:
+        return 'INVALID'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank">{repo} : {ref}</a>'
 
 
 if __name__ == '__main__':
