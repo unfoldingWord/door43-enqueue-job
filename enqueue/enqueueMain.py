@@ -433,7 +433,7 @@ def status():
                 rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
     html = "<table cellpadding=10 colspacing=10 border=2><tr>"
     for q_name in queue_names:
-        html += f"<th>{q_name} Queue</th>"
+        html += f"<th>{q_name} queue</th>"
     html += "</tr>"
     for status in status_order:
         html += "<tr>"
