@@ -469,7 +469,7 @@ def getJob(job_id):
     if not job or not job.args:
         return f"<h1>JOB {job_id} NOT FOUND</h1>"
     html = f'<h1>JOB ID: {job_id}</h1>'
-    html += f'<h2><b>REPO:</b> {get_dcs_link(job)}</h2>'
+    html += f'<h2><b>Repo:</b> {get_dcs_link(job)}</h2>'
     html += f'<h3>{get_ref_type_from_job(job)}: {get_ref_from_job(job)}</h3>'
     html += f'<p>Status: {job.get_status()}<br/>'
     if job.enqueued_at:
