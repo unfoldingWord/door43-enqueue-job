@@ -581,9 +581,10 @@ def get_dcs_link(job):
     repo = get_repo_from_payload(job.args[0]) if job.args else None
     type = get_ref_type_from_payload(job.args[0]) if job.args else 'branch'
     ref = get_ref_from_payload(job.args[0]) if job.args else 'master'
+    event = job.args[0]["DCS_event"] if job.args else 'push'
     if not repo:
         return 'INVALID'
-    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank" title="{repo}/src/{type}/{ref}">{repo.split("/")[-1]}=>{ref}</a>'
+    return f'<a href="https://git.door43.org/{repo}/src/{type}/{ref}" target="_blank" title="{repo}/src/{type}/{ref}">{repo.split("/")[-1]}=>{event}=>{ref}</a>'
 
 
 if __name__ == '__main__':
