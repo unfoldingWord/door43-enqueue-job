@@ -132,7 +132,7 @@ enqueue_callback_job_stats_prefix = f"{stats_prefix}.enqueue-callback-job"
 enqueue_catalog_job_stats_prefix = f"{stats_prefix}.enqueue-catalog-job"
 stats_client = StatsClient(host=graphite_url, port=8125)
 
-queue_names = [PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME, PREFIX + "tx_job_handler", PREFIX + "tx_job_handler_priority", PREFIX + "tx_job_handler_pdf", PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
+queue_names = [DOOR43_JOB_HANDLER_QUEUE_NAME, "tx_job_handler", "tx_job_handler_priority", "tx_job_handler_pdf", DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME]
 
 
 app = Flask(__name__)
@@ -183,9 +183,9 @@ def cancel_similar_jobs(incoming_payload):
         return
     for queue_name in queue_names:
         # Don't want to cancel anything being called back - let it happen
-        if queue_name == PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME:
+        if queue_name == DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME:
             continue
-        queue = Queue(queue_name, connection=redis_connection)
+        queue = Queue(PREFIX + queue_name, connection=redis_connection)
         job_ids = queue.scheduled_job_registry.get_job_ids() + queue.get_job_ids() + queue.started_job_registry.get_job_ids()
         for job_id in job_ids:
             job = queue.fetch_job(job_id)
@@ -281,7 +281,7 @@ def job_receiver():
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
         scheduled = False
-        if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref']:
+        if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref'] and response_dict["DCS_event"] == "push":
             djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
@@ -401,9 +401,8 @@ def callback_receiver():
 def status():
     status_order = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
     rows = {}
-    last_job = None
     for q_name in queue_names:
-        queue = Queue(q_name, connection=redis_connection)
+        queue = Queue(PREFIX + q_name, connection=redis_connection)
         rows[q_name] = {}
         for status in status_order:
             rows[q_name][status] = {}
@@ -411,42 +410,32 @@ def status():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["scheduled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-                if q_name == queue_names[0]:
-                    last_job = job
         for job in queue.get_jobs():
             rows[q_name]["enqueued"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-            if q_name == queue_names[0]:
-                last_job = job
         for id in queue.started_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["started"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-                if q_name == queue_names[0]:
-                    last_job = job
         for id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["finished"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-                if q_name == queue_names[0]:
-                    last_job = job
         for id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["failed"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
-                if q_name == queue_names[0]:
-                    last_job = job
         for id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(id)
             if job:
                 rows[q_name]["canceled"][job.created_at.strftime(f'%Y-%m-%d %H:%M:%S {job.id}')] = get_job_list_html(q_name, job)
     html = '<table cellpadding="10" colspacing="10" border="2"><tr>'
     for q_name in queue_names:
-        html += f'<th>{q_name} queue</th>'
+        html += f'<th>{PREFIX + q_name} queue</th>'
     html += '</tr>'
     for status in status_order:
         html += '<tr>'
         for q_name in queue_names:
-            html += f'<td style="vertical-align:top"><h3>{status.capitalize()} Registery</h3>'
+            html += f'<td style="vertical-align:top"><h3>{status.capitalize()} registery</h3>'
             keys = sorted(rows[q_name][status].keys(), reverse=True)
             for key in keys:
                 html += rows[q_name][status][key]
@@ -580,6 +569,8 @@ def get_ref_type_from_payload(payload):
         ref_parts = payload["ref"].split("/")
         if len(ref_parts) > 1 and ref_parts[1] == "tags":
             return "tag"
+        elif len(ref_parts) == 1:
+            return ref_parts[0]
         else:
             return "branch"
     else:
