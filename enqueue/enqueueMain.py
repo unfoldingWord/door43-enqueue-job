@@ -179,7 +179,8 @@ def cancel_similar_jobs(incoming_payload):
     logger.info(incoming_payload)
     my_repo = get_repo_from_payload(incoming_payload)
     my_ref = get_ref_from_payload(incoming_payload)
-    if not my_repo or not my_ref:
+    my_event = get_event_from_payload(incoming_payload)
+    if not my_repo or not my_ref or my_event != "push":
         return
     for queue_name in queue_names:
         # Don't want to cancel anything being called back - let it happen
@@ -193,7 +194,8 @@ def cancel_similar_jobs(incoming_payload):
                 pl = job.args[0]
                 old_repo = get_repo_from_payload(pl)
                 old_ref = get_ref_from_payload(pl)
-                if my_repo == old_repo and my_ref == old_ref:
+                old_event = get_event_from_payload(pl)
+                if my_repo == old_repo and my_ref == old_ref and old_event == "push":
                         logger.info(f"Found older job for repo: {old_repo}, ref: {old_ref}")
                         try:
                             job.cancel()
@@ -275,7 +277,8 @@ def job_receiver():
         response_dict['door43_webhook_retry_count'] = 0 # In case we want to retry failed jobs
         response_dict['door43_webhook_received_at'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ') # Used to calculate total elapsed time
 
-        cancel_similar_jobs(response_dict)
+        if response_dict['DCS_event'] == "push":
+            cancel_similar_jobs(response_dict)
 
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
@@ -501,6 +504,7 @@ def getJob(queue_name, job_id):
     html += f'<br/><br/>'
     return html
 
+
 def get_relative_time(start=None, end=None):
     if not end:
         end = datetime.utcnow()
@@ -560,6 +564,13 @@ def get_ref_from_payload(payload):
         return ref_parts[-1]
     else:
         return 'master'
+
+
+def get_event_from_payload(payload):
+    if "DCS_event" in payload:
+        return payload["DCS_event"]
+    else:
+        return "push" # Assume push if it is a job without DCS_event in the payload (tX_job_handler)
 
 
 def get_ref_type_from_payload(payload):
