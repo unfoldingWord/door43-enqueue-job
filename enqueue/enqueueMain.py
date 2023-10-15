@@ -478,15 +478,15 @@ def getJob(queue_name, job_id):
         html += f'Ended: {job.ended_at} {round((job.ended_at-job.enqueued_at).total_seconds() / 60)}'
     if job.is_failed or job.exc_info:
         html += f"<div><b>Result:</b><p><pre>{job.exc_info}</pre></p></div>"
-    html += f'<div><p><b>Payload:</b>'
-    html += f'<form>'
-    html += f'<textarea id="payload" cols="200" rows="20" id="payload">'
     if job.args and job.args[0]:
+        html += f'<div><p><b>Payload:</b>'
+        html += f'<form>'
+        html += f'<textarea id="payload" cols="200" rows="20" id="payload">'
         try:
             html += json.dumps(job.args[0], indent=2)
         except:
             html += f"{job.args[0]}"
-    html += f'</textarea>'
+        html += f'</textarea>'
     if queue_name == PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME:
         html += '''<br/><br/>
     <input type="button" value="Re-Queue Job" onClick="submitForm()"/>
@@ -578,7 +578,7 @@ def get_ref_type_from_payload(payload):
         return payload["repo_ref_type"]
     elif "ref" in payload:
         ref_parts = payload["ref"].split("/")
-        if ref_parts[1] == "tags":
+        if len(ref_parts) > 1 and ref_parts[1] == "tags":
             return "tag"
         else:
             return "branch"
