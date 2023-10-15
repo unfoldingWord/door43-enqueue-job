@@ -481,10 +481,11 @@ def getJob(queue_name, job_id):
     html += f'<div><p><b>Payload:</b>'
     html += f'<form>'
     html += f'<textarea id="payload" cols="200" rows="20" id="payload">'
-    try:
-        html += json.dumps(job.args[0], indent=2)
-    except:
-        pass
+    if job.args and job.args[0]:
+        try:
+            html += json.dumps(job.args[0], indent=2)
+        except:
+            html += f"{job.args[0]}"
     html += f'</textarea>'
     if queue_name == PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME:
         html += '''<br/><br/>
