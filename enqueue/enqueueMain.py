@@ -249,11 +249,11 @@ def job_receiver():
         #       The timeout value determines the max run time of the worker once the job is accessed
         scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref'] and response_dict["DCS_event"] == "push":
-            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
+            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
         else:
-            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
+            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued')
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
@@ -518,10 +518,14 @@ def getJob(job_id):
     html = f'<p><a href="../" style="text-decoration:none">&larr; Go back</a></p>'
     html += f'<p><a href="../?job_id={job_id}" style="text-decoration:none">&larr; See only this job in queues</a></p>'
 
-    queue = Queue(PREFIX + DOOR43_JOB_HANDLER_QUEUE_NAME, connection=redis_connection)
-    job = queue.fetch_job(job_id)
-    if not job:
+    job = None
+    for q_name in queue_names:
+        queue = Queue(PREFIX+queue_name, connection=redis_connection)
+        prefix = f'{q_name}_' if q_name != DOOR43_JOB_HANDLER_QUEUE_NAME else ""
+        job = queue.get_job(prefix+job_id)
+    if not job or not job.args:
         return f"<h1>JOB NOT FOUND: {job_id}</h1>"
+
 
     job_map = get_job_map(repo_filter=get_repo_from_payload(job.args[0]), ref_filter=get_ref_from_payload(job.args[0]))
 
