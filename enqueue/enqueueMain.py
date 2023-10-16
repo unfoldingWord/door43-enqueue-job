@@ -375,6 +375,44 @@ queue_desc = {
 }
 registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
 
+@app.route('/' + WEBHOOK_URL_SEGMENT + 'sbmit/', methods = ['GET'])
+def getSubmitForm():
+    f = open('./payload.json')
+    payload = f.read()
+    f.close()
+
+    html += f'''
+<form>
+    <b>Payload:</b><br/><textarea id="payload" rows="5" cols="50">{payload}</textarea>
+    <br/>
+    <b>DCS_event:</b> <input type="text" id="DCS_event" value="push" />
+    <br/>
+    <input type="button" value="Queue Job" onClick="submitForm()"/>
+</form>
+'''
+    html += '''<script type="text/javascript">
+    function submitForm() {
+        var payload = document.getElementById("payload");
+        var dcs_event = document.getElementById("DCS_event");
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/", true);
+        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        xhr.setRequestHeader('X-Gitea-Event', dcs_event.value);
+        xhr.setRequestHeader('X-Gitea-Event-Type', dcs_event.value)
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) {
+                alert(xhr.response);
+                console.log(xhr.response);
+            }
+        };
+        console.log(payload.value);
+        console.log(event.value);
+        xhr.send(payload.value);
+    }
+</script>
+'''
+    return html
+
 
 @app.route('/' + WEBHOOK_URL_SEGMENT + "status/", methods = ['GET'])
 def getStatusTable():
@@ -412,7 +450,6 @@ def getStatusTable():
         html += '<tr>'
         for q_name in queue_names:
             html += f'<td style="vertical-align:top"><h3>{r_name.capitalize()} Registery</h3>'
-            logger.error(job_map)
             sorted_ids = sorted(job_map[q_name][r_name].keys(), key=lambda id: job_map[q_name][r_name][id]["job"].created_at, reverse=True)
             for id in sorted_ids:
                 html += get_job_list_html(job_map[q_name][r_name][id]["job"])
@@ -432,14 +469,12 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
         event = get_event_from_payload(job.args[0])
         job_id = job.id.split('_')[-1]
 
-        logger.error(f"{queue_name} {registry_name} {job_id_filter} {job_id}")
         if (job_id_filter and job_id_filter != job_id) \
             or (repo_filter and repo_filter != repo) \
             or (ref_filter and ref_filter != ref) \
             or (event_filter and event_filter != event):
             return
 
-        logger.error("ADDING "+queue_name+" "+registry_name+" "+job.id+"job_id")
         canceled = job.args[0]["canceled"] if "canceled" in job.args[0] else []
         if job_id not in job_map[queue_name][registry_name]:
             job_map[queue_name][registry_name][job_id] = {}
@@ -475,8 +510,6 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
         if show_canceled:
             for id in queue.canceled_job_registry.get_job_ids():
                 add_to_job_map(queue_name, "canceled", queue.fetch_job(id))
-
-    logger.error(job_map)
     return job_map
 
 
@@ -500,7 +533,6 @@ def getJob(job_id):
     for queue_name in job_map:
         for registry_name in job_map[queue_name]:
             if job_id in job_map[queue_name][registry_name]:
-                logger.error("FOUND! "+queue_name+" "+registry_name)
                 job_info = job_map[queue_name][registry_name][job_id]
                 job_infos.append(job_info)
                 last_queue = queue_name
@@ -531,7 +563,6 @@ def getJob(job_id):
     if job.started_at:
         html += f'<b>Started at:</b> {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}<br/>'
     html += f'{get_job_final_status_and_time(job.created_at, last_job)}<br/>'
-    logger.error(last_job_info)
     if "canceled_by" in last_job_info:
         html += f'<b>Canceled by a similar job:</b> <a href="{last_job_info["canceled_by"]}">{last_job_info["canceled_by"]}</a><br/>'
     if "canceled" in job_info and len(job_info["canceled"]) > 0:
