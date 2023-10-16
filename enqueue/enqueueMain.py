@@ -377,8 +377,9 @@ registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'can
 
 
 @app.route('/' + WEBHOOK_URL_SEGMENT + "status/", methods = ['GET'])
-def status():
+def getStatusTable():
     job_map = get_job_map()
+    html = ""
 
     if len(request.args) > 0:
         html += '<p>Table is filtered. <a href="?">Click to Show All</a></p>'
@@ -494,7 +495,7 @@ def getJob(job_id):
     ref = get_ref_from_payload(job.args[0])
     event = get_event_from_payload(job.args[0])
 
-    html += f'<h1>JOB ID: <a href="../?job_id={job_id}">{job_id}<a></h1>'
+    html = f'<h1>JOB ID: <a href="../?job_id={job_id}">{job_id}<a></h1>'
     html += "<p>"
     html += f'<b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{ref_type}/{ref}" target="_blank">{repo}</a><br/>'
     html += f'<b>{ref_type.capitalize()}:</b> {ref}<br/>'
