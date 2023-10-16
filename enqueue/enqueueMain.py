@@ -756,6 +756,8 @@ def get_ref_from_payload(payload):
     elif "ref" in payload:
         ref_parts = payload["ref"].split("/")
         return ref_parts[-1]
+    elif "release" in payload and "tag_name" in payload["release"]:
+        return payload["release"]["tag_name"]
 
 
 def get_ref_type_from_payload(payload):
@@ -769,6 +771,8 @@ def get_ref_type_from_payload(payload):
             return "tag"
         elif ref_parts[1] == "heads":
             return "branch"
+    elif "release" in payload:
+        return "tag"
 
 
 def get_event_from_payload(payload):
