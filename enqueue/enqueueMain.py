@@ -385,43 +385,6 @@ def getStatusTable():
     event_filter = request.args.get("event")
     show_canceled = job_id_filter=request.args.get("show_canceled",  default=False, type=bool)
 
-#### REMOVE BELOW IN LIVE #####
-    f = open('./payload.json')
-    payload = f.read()
-    f.close()
-
-    html += f'''
-<form>
-    <b>Payload:</b><br/><textarea id="payload" rows="5" cols="50">{payload}</textarea>
-    <br/>
-    <b>DCS_event:</b> <input type="text" id="DCS_event" value="push" />
-    <br/>
-    <input type="button" value="Queue Job" onClick="submitForm()"/>
-</form>
-'''
-    html += '''<script type="text/javascript">
-    function submitForm() {
-        var payload = document.getElementById("payload");
-        var dcs_event = document.getElementById("DCS_event");
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "/", true);
-        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-        xhr.setRequestHeader('X-Gitea-Event', dcs_event.value);
-        xhr.setRequestHeader('X-Gitea-Event-Type', dcs_event.value)
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4) {
-                alert(xhr.response);
-                console.log(xhr.response);
-            }
-        };
-        console.log(payload.value);
-        console.log(event.value);
-        xhr.send(payload.value);
-    }
-</script>
-'''
-#### REMOVE ABOVE IN LIVE #####
-
     if len(request.args) > (1 if show_canceled else 0):
         html += f'<p>Table is filtered. <a href="?{"show_canceled=true" if show_canceled else ""}">Click to Show All Jobs</a></p>'
 
