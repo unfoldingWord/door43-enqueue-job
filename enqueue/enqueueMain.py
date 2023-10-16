@@ -283,7 +283,8 @@ def job_receiver():
                                'status': 'scheduled' if scheduled else 'queued',
                                'job_id': job.id,
                                'queue_name': djh_adjusted_webhook_queue_name,
-                               'door43_job_queued_at': datetime.utcnow()}
+                               'door43_job_queued_at': datetime.utcnow(),
+                               "job_status_url": f"https://git.door43.org/client/webhook/status/job/{job.id}"}
         stats_client.incr(f'{enqueue_job_stats_prefix}.posts.succeeded')
         return jsonify(webhook_return_dict)
     #else:
