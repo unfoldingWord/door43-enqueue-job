@@ -423,7 +423,7 @@ def getStatusTable():
     repo_filter = request.args.get("repo")
     ref_filter = request.args.get("ref")
     event_filter = request.args.get("event")
-    show_canceled = job_id_filter=request.args.get("show_canceled",  default=False, type=bool)
+    show_canceled = request.args.get("show_canceled",  default=False, type=bool)
 
     if len(request.args) > (1 if show_canceled else 0):
         html += f'<p>Table is filtered. <a href="?{"show_canceled=true" if show_canceled else ""}">Click to Show All Jobs</a></p>'
