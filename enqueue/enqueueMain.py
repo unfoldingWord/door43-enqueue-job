@@ -520,12 +520,13 @@ def getJob(job_id):
 
     job = None
     for q_name in queue_names:
-        queue = Queue(PREFIX+queue_name, connection=redis_connection)
+        logger.error(q_name)
+        queue = Queue(PREFIX+q_name, connection=redis_connection)
         prefix = f'{q_name}_' if q_name != DOOR43_JOB_HANDLER_QUEUE_NAME else ""
-        job = queue.get_job(prefix+job_id)
+        job = queue.fetch_job(prefix+job_id)
+        break
     if not job or not job.args:
         return f"<h1>JOB NOT FOUND: {job_id}</h1>"
-
 
     job_map = get_job_map(repo_filter=get_repo_from_payload(job.args[0]), ref_filter=get_ref_from_payload(job.args[0]))
 
