@@ -378,14 +378,64 @@ registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'can
 
 @app.route('/' + WEBHOOK_URL_SEGMENT + "status/", methods = ['GET'])
 def getStatusTable():
-    job_map = get_job_map(job_id_filter=request.args.get("job_id"),
-                          repo_filter=request.args.get("repo"),
-                          ref_filter=request.args.get("ref"),
-                          event_filter=request.args.get("event"))
     html = ""
+    job_id_filter = request.args.get("job_id")
+    repo_filter = request.args.get("repo")
+    ref_filter = request.args.get("ref")
+    event_filter = request.args.get("event")
+    show_canceled = job_id_filter=request.args.get("show_canceled",  default=False, type=bool)
 
-    if len(request.args) > 0:
-        html += '<p>Table is filtered. <a href="?">Click to Show All</a></p>'
+#### REMOVE BELOW IN LIVE #####
+    f = open('./payload.json')
+    payload = f.read()
+    f.close()
+
+    html += f'''
+<form>
+    <b>Payload:</b><br/><textarea id="payload" rows="5" cols="50">{payload}</textarea>
+    <br/>
+    <b>DCS_event:</b> <input type="text" id="DCS_event" value="push" />
+    <br/>
+    <input type="button" value="Queue Job" onClick="submitForm()"/>
+</form>
+'''
+    html += '''<script type="text/javascript">
+    function submitForm() {
+        var payload = document.getElementById("payload");
+        var dcs_event = document.getElementById("DCS_event");
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/", true);
+        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        xhr.setRequestHeader('X-Gitea-Event', dcs_event.value);
+        xhr.setRequestHeader('X-Gitea-Event-Type', dcs_event.value)
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) {
+                alert(xhr.response);
+                console.log(xhr.response);
+            }
+        };
+        console.log(payload.value);
+        console.log(event.value);
+        xhr.send(payload.value);
+    }
+</script>
+'''
+#### REMOVE ABOVE IN LIVE #####
+
+    if len(request.args) > (1 if show_canceled else 0):
+        html += f'<p>Table is filtered. <a href="?{"show_canceled=true" if show_canceled else ""}">Click to Show All Jobs</a></p>'
+
+    html += f'<form METHOD="GET">'
+    if repo_filter:
+        html += f'<input type="hidden" name="repo" value="{repo_filter}"/>'
+    if ref_filter:
+        html += f'<input type="hidden" name="ref" value="{ref_filter}"/>'
+    if event_filter:
+        html += f'<input type="hidden" name="event" value="{event_filter}"/>'
+    html += f'<input type="checkbox" name="show_canceled" value="true" onChange="this.form.submit()"  {"checked" if show_canceled else ""}/> Show canceled</form>'
+
+    job_map = get_job_map(repo_filter=repo_filter, ref_filter=ref_filter, event_filter=event_filter, show_canceled=show_canceled)
+
     html += '<table cellpadding="10" colspacing="10" border="2"><tr>'
     for i, q_name in enumerate(queue_names):
         html += f'<th style="vertical-align:top">{q_name}{"&rArr;tx" if i==0 else "&rArr;callback" if i<(len(queue_names)-1) else ""}</th>'
@@ -394,6 +444,8 @@ def getStatusTable():
         html += f'<td style="font-style: italic;font-size:0.8em;vertical-align:top">{queue_desc[q_name]}</td>'
     html += '</tr>'
     for r_name in registry_names:
+        if r_name == "canceled" and not show_canceled:
+            continue
         html += '<tr>'
         for q_name in queue_names:
             html += f'<td style="vertical-align:top"><h3>{r_name.capitalize()} Registery</h3>'
@@ -406,7 +458,7 @@ def getStatusTable():
     html += '</table><br/><br/>'
     return html
 
-def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_filter=None):
+def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_filter=None, show_canceled=False):
     job_map = {}
 
     def add_to_job_map(queue_name, registry_name, job):
@@ -457,8 +509,9 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
             add_to_job_map(queue_name, "finished", queue.fetch_job(id))
         for id in queue.failed_job_registry.get_job_ids():
             add_to_job_map(queue_name, "failed", queue.fetch_job(id))
-        for id in queue.canceled_job_registry.get_job_ids():
-            add_to_job_map(queue_name, "canceled", queue.fetch_job(id))
+        if show_canceled:
+            for id in queue.canceled_job_registry.get_job_ids():
+                add_to_job_map(queue_name, "canceled", queue.fetch_job(id))
 
     logger.error(job_map)
     return job_map
