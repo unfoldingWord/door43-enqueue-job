@@ -437,7 +437,7 @@ def getStatusTable():
         html += f'<input type="hidden" name="event" value="{event_filter}"/>'
     html += f'<input type="checkbox" name="show_canceled" value="true" onChange="this.form.submit()"  {"checked" if show_canceled else ""}/> Show canceled</form>'
 
-    job_map = get_job_map(repo_filter=repo_filter, ref_filter=ref_filter, event_filter=event_filter, show_canceled=show_canceled)
+    job_map = get_job_map(job_id_filter=job_id_filter, repo_filter=repo_filter, ref_filter=ref_filter, event_filter=event_filter, show_canceled=show_canceled)
 
     html += '<table cellpadding="10" colspacing="10" border="2"><tr>'
     for i, q_name in enumerate(queue_names):
