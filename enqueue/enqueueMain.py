@@ -378,7 +378,10 @@ registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'can
 
 @app.route('/' + WEBHOOK_URL_SEGMENT + "status/", methods = ['GET'])
 def getStatusTable():
-    job_map = get_job_map()
+    job_map = get_job_map(job_id_filter=request.args.get("job_id"),
+                          repo_filter=request.args.get("repo"),
+                          ref_filter=request.args.get("ref"),
+                          event_filter=request.args.get("event"))
     html = ""
 
     if len(request.args) > 0:
