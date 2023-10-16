@@ -240,6 +240,8 @@ def check_posted_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
 
     # Add the event to the payload to be passed on
     payload_json['DCS_event'] = event_type
+    if request.headers['X-Gitea-Delivery']:
+        payload_json['job_id'] = request.headers['X-Gitea-Delivery']
 
     logger.debug(f"Door43 payload for {event_type} seems ok")
     return True, payload_json
