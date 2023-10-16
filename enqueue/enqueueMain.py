@@ -410,6 +410,8 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
     job_map = {}
 
     def add_to_job_map(queue_name, registry_name, job):
+        if not job or not job.args:
+            return
         repo = get_repo_from_payload(job.args[0])
         ref = get_ref_from_payload(job.args[0])
         event = get_event_from_payload(job.args[0])
