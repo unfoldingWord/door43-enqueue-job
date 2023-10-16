@@ -783,6 +783,8 @@ def get_ref_type_from_payload(payload):
             return "tag"
     elif "forkee" in payload:
         return "branch"
+    elif "release" in payload:
+        return "tag"
 
 
 def get_event_from_payload(payload):
