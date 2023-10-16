@@ -758,6 +758,8 @@ def get_ref_from_payload(payload):
         return ref_parts[-1]
     elif "release" in payload and "tag_name" in payload["release"]:
         return payload["release"]["tag_name"]
+    elif "DCS_event" in payload and payload["DCS_event"] == "fork":
+        return "master"
 
 
 def get_ref_type_from_payload(payload):
@@ -771,8 +773,12 @@ def get_ref_type_from_payload(payload):
             return "tag"
         elif ref_parts[1] == "heads":
             return "branch"
-    elif "release" in payload:
-        return "tag"
+    elif "DCS_event" in payload:
+        if payload["DCS_event"] == "fork":
+            return "branch"
+        elif payload["DCS_event"] == "release":
+            return "tag"
+
 
 
 def get_event_from_payload(payload):
