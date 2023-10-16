@@ -500,19 +500,19 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
         for registry_name in registry_names:
             job_map[queue_name][registry_name] = {}
         for id in queue.scheduled_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id:
+            if not job_id_filter or job_id_filter == id.split('_')[-1]:
                 add_to_job_map(queue_name, "scheduled", queue.fetch_job(id))
         for job in queue.get_jobs():
-            if not job_id_filter or job_id_filter == id:
+            if not job_id_filter or job_id_filter == id.split('_')[-1]:
                 add_to_job_map(queue_name, "enqueued", job)
         for id in queue.started_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id:
+            if not job_id_filter or job_id_filter == id.split('_')[-1]:
                add_to_job_map(queue_name, "started", queue.fetch_job(id))
         for id in queue.finished_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id:
+            if not job_id_filter or job_id_filter == id.split('_')[-1]:
                 add_to_job_map(queue_name, "finished", queue.fetch_job(id))
         for id in queue.failed_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id:
+            if not job_id_filter or job_id_filter == id.split('_')[-1]:
                 add_to_job_map(queue_name, "failed", queue.fetch_job(id))
         if show_canceled:
             if not job_id_filter or job_id_filter == id:
