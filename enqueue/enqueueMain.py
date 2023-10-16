@@ -562,7 +562,7 @@ def getJob(job_id):
     ref = get_ref_from_payload(job.args[0])
     event = get_event_from_payload(job.args[0])
 
-    html += f'<h1>JOB ID: <a href="../?job_id={job_id}">{job_id}<a></h1>'
+    html += f'<h1>JOB ID: {job_id}</h1>'
     html += "<p>"
     html += f'<b>Repo:</b> <a href="https://git.door43.org/{repo}/src/{ref_type}/{ref}" target="_blank">{repo}</a><br/>'
     html += f'<b>{ref_type.capitalize()}:</b> {ref}<br/>'
