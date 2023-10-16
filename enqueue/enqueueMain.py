@@ -465,6 +465,7 @@ def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_fil
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/job/<job_id>", methods=['GET'])
 def getJob(job_id):
     html = f'<p><a href="../" style="text-decoration:none">&larr; Go back</a></p>'
+    html += f'<p><a href="../?job_id={job_id}" style="text-decoration:none">&larr; See only this job in queues</a></p>'
 
     queue = Queue(PREFIX + DOOR43_JOB_HANDLER_QUEUE_NAME, connection=redis_connection)
     job = queue.fetch_job(job_id)
