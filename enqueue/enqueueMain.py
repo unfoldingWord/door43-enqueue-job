@@ -723,7 +723,7 @@ def get_job_list_filter_link(job):
     repo = get_repo_from_payload(job.args[0])
     ref = get_ref_from_payload(job.args[0])
     event = get_event_from_payload(job.args[0])
-    return f'<a href="?repo={repo}">{repo.split("/")[-1]}</a>=><a href="?repo={repo}&ref={ref}">{ref}</a>=><a href="?repo={repo}&ref={ref}&event={event}">{event}</a>'
+    return f'<a href="?repo={repo}" title="{repo}">{repo.split("/")[-1]}&#128172;</a>=><a href="?repo={repo}&ref={ref}">{ref}</a>=><a href="?repo={repo}&ref={ref}&event={event}">{event}</a>'
 
 
 def get_dcs_link(job):
