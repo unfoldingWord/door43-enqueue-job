@@ -249,11 +249,11 @@ def job_receiver():
         #       The timeout value determines the max run time of the worker once the job is accessed
         scheduled = False
         if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref'] and response_dict["DCS_event"] == "push":
-            djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
+            job = djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
         else:
-            djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
+            job = djh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*3)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.directly_queued')
         # dcjh_queue.enqueue('webhook.job', response_dict, job_timeout=WEBHOOK_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
@@ -262,7 +262,7 @@ def job_receiver():
         len_djh_scheduled = len(djh_queue.scheduled_job_registry.get_job_ids())
         if scheduled:
             # len_dcjh_queue = len(dcjh_queue) # Update
-            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.utcnow() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} scheduled valid job with ID {job.id} to be added to the {djh_adjusted_webhook_queue_name} queue in {MINUTES_TO_WAIT} minutes [@{datetime.utcnow() + timedelta(minutes=MINUTES_TO_WAIT)}]" \
                         f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
                             f"for {Worker.count(queue=djh_queue)} workers)" \
                         # f"({len_dcjh_queue} jobs now " \
@@ -271,7 +271,7 @@ def job_receiver():
                         # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
             )
         else:
-            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} added to the {djh_adjusted_webhook_queue_name} queue  at {datetime.utcnow()}" \
+            logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} added valid job with ID {job.id} to the {djh_adjusted_webhook_queue_name} queue  at {datetime.utcnow()}" \
                         f" ({len_djh_scheduled} jobs scheduled, {len_djh_queue} jobs in queued " \
                             f"for {Worker.count(queue=djh_queue)} workers)" \
                         # f"({len_dcjh_queue} jobs now " \
@@ -280,7 +280,8 @@ def job_receiver():
                         # f"{len_dcjh_failed_queue} failed jobs) at {datetime.utcnow()}\n"
             )
         webhook_return_dict = {'success': True,
-                               'status': 'queued',
+                               'status': 'scheduled' if scheduled else 'queued',
+                               'job_id': job.id,
                                'queue_name': djh_adjusted_webhook_queue_name,
                                'door43_job_queued_at': datetime.utcnow()}
         stats_client.incr(f'{enqueue_job_stats_prefix}.posts.succeeded')
@@ -695,7 +696,6 @@ def get_relative_time(start=None, end=None):
     if not start:
         start = end
     ago = round((end - start).total_seconds())
-    print(f"ago: {ago}", file=sys.stderr)
     t = "s"
     if ago > 120:
         ago = round(ago / 60)
