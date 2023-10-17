@@ -450,7 +450,7 @@ def get_status_table():
                 html += '</td>'
             html += '</tr>'
     html += '</table>'
-    results = {'num_jobs': numJobs, 'table': html}
+    results = {'table': html}
     return jsonify(results)
 
 
