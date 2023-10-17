@@ -13,6 +13,7 @@ import boto3
 import watchtower
 from functools import reduce
 import json
+import os
 
 # Library (PyPI) imports
 from flask import Flask, request, jsonify
@@ -382,6 +383,7 @@ queue_desc = {
     DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME: "Fetches coverted files from cloud, deploys to Door43 Preview (door43.org) for HTML and PDF jobs",
 }
 registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 @app.route('/'+WEBHOOK_URL_SEGMENT, methods = ['GET'])
@@ -389,39 +391,8 @@ def homepage():
     return 'Go to the  <a href="status/">status page</a>'
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT, methods=['POST'])
-def job_receiver():
-    if not request.data:
-        logger.error("Received request but no payload found")
-        return jsonify({'error': 'No payload found. You must submit a POST request via a DCS webhook notification.'}), 400
-
-    # Bail if this is not from DCS
-    if 'X-Gitea-Event' not in request.headers:
-        logger.error(f"No 'X-Gitea-Event' in {request.headers}")
-        return jsonify({'error': 'This does not appear to be from DCS.'}), 400
-
-    event_type = request.headers['X-Gitea-Event']
-    logger.error(f"Got a '{event_type}' event from DCS")
-
-    # Get the json payload and check it
-    payload = request.get_json()
-    payload["DCS_event"] = event_type
-    job = queue_new_job(payload)
-    if job:
-        return_dict = {'success': True,
-                       'job_id': job.id,
-                        'status': 'queued',
-                        'queue_name': "door43_job_handler",
-                       'door43_job_queued_at': datetime.utcnow()}
-        return jsonify(return_dict)
-    else:
-        return jsonify({'error': 'Failed to queue job. See logs'}), 400    
-
-
 @app.route('/' + WEBHOOK_URL_SEGMENT + 'status/', methods = ['GET'])
 def status_page():
-  if not os.path.exists(os.path.join(basedir, 'status_data.db')):
-    db.create_all()
   f = open(os.path.join(basedir, 'payload.json'))
   payload = f.read()
   f.close()
@@ -875,6 +846,7 @@ def cancel_similar_jobs(incoming_payload):
 
 
 ### COPY THIS AND ABOVE #####
+
 
 if __name__ == '__main__':
     app.run()
