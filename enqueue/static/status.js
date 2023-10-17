@@ -58,7 +58,7 @@ function filterTable(repo, ref, dcs_event) {
     clearTimeout(filterTableCallID);
     $.ajax({
       type: "POST",
-      url: "/get_status_table",
+      url: "../get_status_table",
       data: JSON.stringify(searchCriteria),
       contentType: "application/json",
       dataType: 'json',
@@ -89,7 +89,7 @@ function filterTable(repo, ref, dcs_event) {
     $loading.show();
     $.ajax({
       type: "POST",
-      url: "/",
+      url: "../",
       headers: {
         'X-Gitea-Event': dcs_event.val()
       },
