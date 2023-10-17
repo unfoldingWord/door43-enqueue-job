@@ -1,0 +1,6 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:100);
+
+#status-container, #queue-form, #filter-form {
+    padding: 15px;
+}
+
