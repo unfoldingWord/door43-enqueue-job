@@ -335,7 +335,7 @@ def callback_receiver():
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id="callback_"+response_dict['job_id'], result_ttl=(60*60*24)) # A function named callback.job will be called by the worker
+        djh_queue.enqueue('callback.job', response_dict, job_timeout=CALLBACK_TIMEOUT, job_id=f'{PREFIXED_DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME}_{response_dict["job_id"]}', result_ttl=(60*60*24)) # A function named callback.job will be called by the worker
         # NOTE: The above line can return a result from the callback.job function. (By default, the result remains available for 500s.)
 
         # Find out who our workers are
@@ -531,9 +531,9 @@ def getJob(job_id):
 
     job = None
     for q_name in queue_names:
-        logger.error(q_name)
-        prefix = f'{q_name}_' if q_name != DOOR43_JOB_HANDLER_QUEUE_NAME else ""
-        queue = Queue(PREFIX+q_name, connection=redis_connection)
+        prefix = f'{PREFIX}{q_name}_' if q_name != DOOR43_JOB_HANDLER_QUEUE_NAME else ""
+        logger.error(f'{PREFIX}{q_name} => {prefix}{job_id}')
+        queue = Queue(f'{PREFIX}{q_name}', connection=redis_connection)
         job = queue.fetch_job(prefix+job_id)
         if job:
             break
