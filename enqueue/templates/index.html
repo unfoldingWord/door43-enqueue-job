@@ -30,7 +30,7 @@
         <br/>
         <input type="checkbox" id="show-canceled" /> <label for="show-canceled">Show canceled</label>
           <br/>
-          <input type="button" name="filter" value="Filter" onClick="filterTable()"/>
+          <input type="button" name="filter" value="GO!" onClick="filterTable()"/>
           <input type="button" name="clear" value="Clear" onClick="(()=>{$('#repo').val('');$('#ref').val('');$('#event').val('');$('#job-id').val('');filterTable()})()"/>
           <div id="loading" class="spinner-border spinner-border-sm" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -40,7 +40,7 @@
       <br/>
       <div class="float-end">Refresh every <input type="text" id="refresh" value="10" size="3" /> seconds</div>
       <div id="status-results" style="clear:both">
-        <div id="status-table">Enter criteria or just click "Filter"</div>
+        <div id="status-table"><b>Enter filter criteria (optional) and click "GO!"</div>
      </div>
     </div>
   </body>
