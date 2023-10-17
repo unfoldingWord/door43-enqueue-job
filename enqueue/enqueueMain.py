@@ -532,10 +532,11 @@ def getJob(job_id):
     job = None
     for q_name in queue_names:
         logger.error(q_name)
-        queue = Queue(PREFIX+q_name, connection=redis_connection)
         prefix = f'{q_name}_' if q_name != DOOR43_JOB_HANDLER_QUEUE_NAME else ""
+        queue = Queue(PREFIX+q_name, connection=redis_connection)
         job = queue.fetch_job(prefix+job_id)
-        break
+        if job:
+            break
     if not job or not job.args:
         return f"<h1>JOB NOT FOUND: {job_id}</h1>"
 
@@ -781,10 +782,6 @@ def get_ref_type_from_payload(payload):
             return "branch"
         elif payload["DCS_event"] == "release":
             return "tag"
-    elif "forkee" in payload:
-        return "branch"
-    elif "release" in payload:
-        return "tag"
 
 
 def get_event_from_payload(payload):
