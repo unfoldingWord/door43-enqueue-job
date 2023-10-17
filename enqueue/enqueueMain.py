@@ -428,8 +428,7 @@ def get_status_table():
         registry_job_order[r] = sorted(reg_jobs.keys(), key=lambda id: reg_jobs[id].created_at, reverse=True)
     logger.error(registry_job_order)
 
-    html = '<table class="table"><tr>'
-    html = '<table cellpadding="10" colspacing="10" border="2"><thead><tr><th scope="col">Registry</th>'
+    html = '<table class="table"><tr><th scope="col">Registry</th>'
     for i, q_name in enumerate(queue_names):
         html += f'<th  scope="col" style="vertical-align:top">{q_name}{"&rArr;tx" if i==0 else "&rArr;callback" if i<(len(queue_names)-1) else ""}</th>'
     html += '</tr><tr><td>&nbsp</td>'
