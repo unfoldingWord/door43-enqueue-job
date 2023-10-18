@@ -465,8 +465,6 @@ def get_status_table():
                 orig_job_id = job_id.split('_')[-1]
                 if job_id_filter and job_id_filter != orig_job_id:
                     continue
-                if orig_job_id not in job_created:
-                    job_created[orig_job_id] = job.created_at
                 repo = get_repo_from_payload(job.args[0])
                 ref_type = get_ref_type_from_payload(job.args[0])
                 ref = get_ref_from_payload(job.args[0])
@@ -475,6 +473,8 @@ def get_status_table():
                     or (ref_filter and ref_filter != ref) \
                     or (event_filter and event_filter != event):
                     continue
+                if orig_job_id not in job_created:
+                    job_created[orig_job_id] = job.created_at
                 r_data[q_name][orig_job_id] = {
                     "job_id": orig_job_id,
                     "created_at": job.created_at,
