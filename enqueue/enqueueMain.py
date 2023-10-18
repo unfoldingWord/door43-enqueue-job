@@ -463,6 +463,8 @@ def get_status_table():
                 if not job or not job.args:
                     continue
                 orig_job_id = job_id.split('_')[-1]
+                if job_id_filter and job_id_filter != orig_job_id:
+                    continue
                 if orig_job_id not in job_created:
                     job_created[orig_job_id] = job.created_at
                 repo = get_repo_from_payload(job.args[0])
