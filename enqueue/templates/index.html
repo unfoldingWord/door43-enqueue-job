@@ -28,7 +28,7 @@
           Event: <input type="text" id="event" value="{{event}}" />
           Job ID: <input type="text" id="job-id" value="{{job_id}}" />
         <br/>
-        <input type="checkbox" id="show-canceled" /> <label for="show-canceled">Show canceled</label>
+        <input type="checkbox" id="show-canceled" checked /> <label for="show-canceled">Show canceled</label>
           <br/>
           <input type="button" name="filter" value="GO!" onClick="filterTable()"/>
           <input type="button" name="clear" value="Clear" onClick="(()=>{$('#repo').val('');$('#ref').val('');$('#event').val('');$('#job-id').val('');filterTable()})()"/>
