@@ -629,7 +629,7 @@ def get_queue_job_info_html(job_data):
     if job_data["created_at"]:
         html += f'<b>Created at:</b> {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}<br/>'
     if job_data["enqueued_at"]:
-        html += f'<b>Enqued at:</b> {job_data["enqueued_at"].strftime("%Y-%m-%d %H:%M:%S")}{f" (Position: {job.get_position()+1})" if job_data["is_queued"] else ""}<br/>'
+        html += f'<b>Enqued at:</b> {job_data["enqueued_at"].strftime("%Y-%m-%d %H:%M:%S")}<br/>'
     if job_data["started_at"]:
         html += f'<b>Started:</b> {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}<br/>'
     if job_data["ended_at"]:
