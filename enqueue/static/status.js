@@ -56,6 +56,7 @@ function filterTable(repo, ref, dcs_event) {
 
   var $statusMessage = $("#status-message");
   var $refresh = $("#refresh");
+  var $statusTable = $("#status-table");
 
   $loading.show();
   $statusMessage.html("");
@@ -68,6 +69,7 @@ function filterTable(repo, ref, dcs_event) {
     dataType: "json",
     success: function (result) {
       updateTableRows(result.table_rows);
+      $statusTable.show();
       if ($refresh.val() && $refresh.val() != "0") {
         filterTableCallID = setTimeout(filterTable, $refresh.val() * 1000);
       }
@@ -115,7 +117,6 @@ function queueJob() {
   var payload = $("#payload");
   var dcs_event = $("#dcs-event");
   var $statusMessage = $("#status-message");
-  var $statusTable = $("#status-table");
   $loading.show();
   $.ajax({
     type: "POST",
@@ -127,7 +128,6 @@ function queueJob() {
     contentType: "application/json",
     success: function (result) {
       $statusMessage.html(result.message);
-      $statusTable.show();
       filterTable();
     },
     error: function (result) {
