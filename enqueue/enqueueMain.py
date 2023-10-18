@@ -429,8 +429,6 @@ def get_status_table():
     # db.session.commit()
     # numJobs = db.session.query(StoreSearchData).count()
 
-    # job_map = get_job_map(job_id_filter=job_id, repo_filter=repo, ref_filter=ref, event_filter=event, show_canceled=show_canceled)
-
     html = '<table class="table"><tr class="table-dark"><th scope="col" style="vertical-align:top">Queue:</th>'
     for i, q_name in enumerate(queue_names):
         html += f'<th scope="col" style="vertical-align:top">{q_name}{"&rArr;tx" if i==0 else "&rArr;callback" if i<(len(queue_names)-1) else ""}</th>'
@@ -632,67 +630,6 @@ def clearCanceled():
 
 
 #### FUNCS FOR GENERATING TABLE
-
-def get_job_map(job_id_filter=None, repo_filter=None, ref_filter=None, event_filter=None, show_canceled=False):
-    job_map = {}
-
-    def add_to_job_map(queue_name, registry_name, job):
-        if not job or not job.args:
-            return
-        repo = get_repo_from_payload(job.args[0])
-        ref = get_ref_from_payload(job.args[0])
-        event = get_event_from_payload(job.args[0])
-        job_id = job.id.split('_')[-1]
-
-        if (job_id_filter and job_id_filter != job_id) \
-            or (repo_filter and repo_filter != repo) \
-            or (ref_filter and ref_filter != ref) \
-            or (event_filter and event_filter != event):
-            return
-
-        canceled = job.args[0]["canceled"] if "canceled" in job.args[0] else []
-        if job_id not in job_map[queue_name][registry_name]:
-            job_map[queue_name][registry_name][job_id] = {}
-        job_map[queue_name][registry_name][job_id]["job"] = job
-        job_map[queue_name][registry_name][job_id]["canceled"] = canceled
-
-        for qn in job_map:
-            for rn in job_map[qn]:
-                for id in job_map[qn][rn]:
-                    j = job_map[qn][rn][id]["job"]
-                    c = job_map[qn][rn][id]["canceled"] if "canceled" in job_map[qn][rn][id]["job"].args[0] else []
-                    if id != job_id and (job.is_canceled or j.is_canceled):
-                        if id in canceled:
-                            job_map[qn][rn][id]["canceled_by"] = job_id
-                        elif job_id in c:
-                            job_map[queue_name][registry_name][job_id]["canceled_by"] = id
-
-    for queue_name in queue_names:
-        queue = Queue(PREFIX + queue_name, connection=redis_connection)
-        job_map[queue_name] = {}
-        for registry_name in registry_names:
-            job_map[queue_name][registry_name] = {}
-        for id in queue.scheduled_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id.split('_')[-1]:
-                add_to_job_map(queue_name, "scheduled", queue.fetch_job(id))
-        for job in queue.get_jobs():
-            if not job_id_filter or job_id_filter == id.split('_')[-1]:
-                add_to_job_map(queue_name, "enqueued", job)
-        for id in queue.started_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id.split('_')[-1]:
-               add_to_job_map(queue_name, "started", queue.fetch_job(id))
-        for id in queue.finished_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id.split('_')[-1]:
-                add_to_job_map(queue_name, "finished", queue.fetch_job(id))
-        for id in queue.failed_job_registry.get_job_ids():
-            if not job_id_filter or job_id_filter == id.split('_')[-1]:
-                add_to_job_map(queue_name, "failed", queue.fetch_job(id))
-        if show_canceled:
-            if not job_id_filter or job_id_filter == id:
-                for id in queue.canceled_job_registry.get_job_ids():
-                    add_to_job_map(queue_name, "canceled", queue.fetch_job(id))
-    return job_map
-
 
 def get_queue_job_info_html(job_data):
     html = f'<h2>Queue: {PREFIX+job_data["queue_name"]}</h2>'
