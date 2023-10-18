@@ -4,3 +4,6 @@
     padding: 15px;
 }
 
+#queue-form {
+    display: hidden;
+}

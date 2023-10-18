@@ -792,6 +792,7 @@ def get_ref_type_from_payload(payload):
             return "branch"
         elif payload["DCS_event"] == "release":
             return "tag"
+    return "branch"
 
 
 def get_event_from_payload(payload):
