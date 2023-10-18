@@ -115,10 +115,7 @@ function queueJob() {
   var payload = $("#payload");
   var dcs_event = $("#dcs-event");
   var $statusMessage = $("#status-message");
-  var submitData = {
-    payload: payload.val(),
-    event: dcs_event.val(),
-  };
+  var $statusTable = $("#status-table");
   $loading.show();
   $.ajax({
     type: "POST",
@@ -130,6 +127,7 @@ function queueJob() {
     contentType: "application/json",
     success: function (result) {
       $statusMessage.html(result.message);
+      $statusTable.show();
       filterTable();
     },
     error: function (result) {
