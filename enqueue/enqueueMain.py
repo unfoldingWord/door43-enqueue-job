@@ -375,13 +375,6 @@ def callback_receiver():
 #### COPY THIS AND BELOW!!!!! #####
 
 queue_names = ["door43_job_handler", "tx_job_handler", "tx_job_handler_priority", "tx_job_handler_pdf", "door43_job_handler_callback"]
-queue_desc = {
-    DOOR43_JOB_HANDLER_QUEUE_NAME: "Lints files & massages files for tX, uploads to cloud, sends work request to tx_job_handler",
-    "tx_job_handler": "Handles branches that are not master (user branches), converts to HTML, uploads result to cloud, sends a work request to door43 callback",
-    "tx_job_handler_priority": "Handles master branch and tags (releass), converting to HTML, uploads result to cloud, sends a work request to door43 callback",
-    "tx_job_handler_pdf": "Handles PDF requests, converting to PDF, uploads result to cloud, sends a work request door43 callback",
-    DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME: "Fetches coverted files from cloud, deploys to Door43 Preview (door43.org) for HTML and PDF jobs",
-}
 registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
 reg_colors = {
     "scheduled": "primary",
