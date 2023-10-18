@@ -51,7 +51,6 @@ function filterTable(repo, ref, dcs_event) {
     ref: $ref.val(),
     event: $event.val(),
     job_id: $job_id.val(),
-    show_canceled: $("#show-canceled").is(":checked"),
   };
   console.log(searchCriteria);
 

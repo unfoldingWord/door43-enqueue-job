@@ -421,11 +421,10 @@ def get_status_table():
     ref_filter = status_data['ref']
     event_filter = status_data['event']
     job_id_filter = status_data['job_id']
-    show_canceled = status_data['show_canceled']  
 
     logger.error(status_data)      
 
-    # db.session.add(StoreSearchData(repo, ref, event, job_id, show_canceled))
+    # db.session.add(StoreSearchData(repo, ref, event, job_id))
     # db.session.commit()
     # numJobs = db.session.query(StoreSearchData).count()
 
@@ -436,8 +435,6 @@ def get_status_table():
             "color": reg_colors[r_name],
             "rows": [],
         }   
-        if r_name == "canceled" and not show_canceled:
-            continue
         r_data = {}
         job_created = {}
         for q_name in queue_names:
