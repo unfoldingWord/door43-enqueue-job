@@ -562,8 +562,10 @@ def getJob(job_id):
                 if not j or not j.args:
                     continue
                 orig_id = id.split('_')[-1]
-                if "canceled" in j.args[0] and job_id in j.args[0]["canceled"]:
-                    job_data["canceled_by"] = orig_id
+                if "canceled" in j.args[0]:
+                    for canceled_id in j.args[0]["canceled"]:
+                        if job_id in canceled_id:
+                            job_data["canceled_by"] = orig_id
         job_datas.append(job_data)
 
     logger.error(job_datas)
@@ -864,7 +866,7 @@ def cancel_similar_jobs(incoming_payload):
                             logger.info(f"CANCELLED JOB {job.id} ({job.get_status()}) IN QUEUE {queue.name} DUE TO BEING SIMILAR TO NEW JOB")
                             if "canceled" not in incoming_payload:
                                 incoming_payload["canceled"] = []
-                            incoming_payload["canceled"].append(job.id)
+                            incoming_payload["canceled"].append(job.id.split('_')[-1])
                         except:
                             pass
 # end of cancel_similar_jobs function
