@@ -460,9 +460,9 @@ def get_status_table():
                 job_ids == queue.canceled_job_registry.get_job_ids()
             for job_id in job_ids:
                 job = queue.fetch_job(job_id)
+                orig_job_id = job_id.split('_')[-1]
                 if not job or not job.args:
                     continue
-                orig_job_id = job_id.split('_')[-1]
                 if job_id_filter and job_id_filter != orig_job_id:
                     continue
                 repo = get_repo_from_payload(job.args[0])
