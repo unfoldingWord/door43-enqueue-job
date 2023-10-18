@@ -459,8 +459,8 @@ def get_status_table():
             if r_name == "canceled":
                 job_ids == queue.canceled_job_registry.get_job_ids()
             for job_id in job_ids:
-                job = queue.fetch_job(job_id)
                 orig_job_id = job_id.split('_')[-1]
+                job = queue.fetch_job(job_id)
                 if not job or not job.args:
                     continue
                 if job_id_filter and job_id_filter != orig_job_id:
