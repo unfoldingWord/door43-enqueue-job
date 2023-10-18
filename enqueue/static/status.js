@@ -55,7 +55,7 @@ function filterTable(repo, ref, dcs_event) {
     var $statusTable = $("#status-table");
 
     $loading.show();
-    $statusTable.html("");
+    $statusMessage.html("");
     clearTimeout(filterTableCallID);
     $.ajax({
       type: "POST",
