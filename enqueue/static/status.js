@@ -96,11 +96,10 @@ function filterTable(repo, ref, dcs_event) {
       data: payload.val(),
       contentType: "application/json",
       success: function(result) {
-        $statusMessage.html(result.message);
         filterTable();
       },
       error: function(result) {
-        $statusMessage.html("ERROR: "+result.error);
+        $statusMessage.html("ERROR: "+ result.data.error);
         console.log("ERROR!");
         console.log(result);
       },      
