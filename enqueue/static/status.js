@@ -109,7 +109,8 @@ function updateTableRows(table_rows) {
         }
       })
     }
-    $("#"+registry+"Count").text(table_rows[registry].rows.length);
+    var count = table_rows[registry].rows.length;
+    $("#"+registry+"Count").text(count+" job"+(count==0||count>1?"s":""));
   })  
 }
 
