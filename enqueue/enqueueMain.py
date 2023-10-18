@@ -494,7 +494,7 @@ def get_status_table():
         reverse_ordered_job_ids = sorted(job_created.keys(), key=lambda id: job_created[id], reverse=True)
         if len(reverse_ordered_job_ids) == 0:
             continue
-        html += f'<tr class="table-{reg_colors[r_name]} accordion-toggle" data-bs-toggle="collapse" data-bs-target=".{r_name}Row" href=".{r_name}Row" role="button" aria-expanded="false" aria-controls="{r_name}Row"><th scope="row" style="vertical-align: top"colspan="{len(queue_names)+1}"><button type="button" class="btn">{r_name.capitalize()}</button></th></tr>'
+        html += f'<tr class="table-{reg_colors[r_name]} accordion-toggle" data-bs-toggle="collapse" data-bs-target=".{r_name}Row" href=".{r_name}Row" role="button" aria-expanded="false" aria-controls="{r_name}Row"><th scope="row" style="vertical-align: top"colspan="{len(queue_names)+1}"><button type="button" class="btn" style="font-weight:bold">{r_name.capitalize()}</button></th></tr>'
         for orig_job_id in reverse_ordered_job_ids:
             html += f'<tr class="table-{reg_colors[r_name]} collapse {r_name}Row"><td scope="row">&nbsp;</th>'
             for q_name in queue_names:
