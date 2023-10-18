@@ -782,10 +782,11 @@ def get_ref_type_from_payload(payload):
         return payload["repo_ref_type"]
     elif "ref" in payload:
         ref_parts = payload["ref"].split("/")
-        if ref_parts[1] == "tags":
-            return "tag"
-        elif ref_parts[1] == "heads":
-            return "branch"
+        if len(ref_parts) > 1:
+            if ref_parts[1] == "tags":
+                return "tag"
+            elif ref_parts[1] == "heads":
+                return "branch"
     elif "DCS_event" in payload:
         if payload["DCS_event"] == "fork":
             return "branch"
