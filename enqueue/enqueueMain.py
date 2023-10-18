@@ -383,6 +383,14 @@ queue_desc = {
     DOOR43_JOB_HANDLER_CALLBACK_QUEUE_NAME: "Fetches coverted files from cloud, deploys to Door43 Preview (door43.org) for HTML and PDF jobs",
 }
 registry_names = ["scheduled", "enqueued", "started", "finished", "failed", 'canceled']
+reg_colors = {
+    "scheduled": "primary",
+    "enqueued": "secondary",
+    "started": "success",
+    "finished": "info",
+    "failed": "danger",
+    "canceled": "light"
+}
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -393,6 +401,8 @@ def homepage():
 
 @app.route('/' + WEBHOOK_URL_SEGMENT + 'status/', methods = ['GET'])
 def status_page():
+#   if not os.path.exists(os.path.join(basedir, 'status_data.db')):
+#     db.create_all()
   f = open(os.path.join(basedir, 'payload.json'))
   payload = f.read()
   f.close()
@@ -415,35 +425,71 @@ def get_status_table():
 
     logger.error(status_data)      
 
-    job_map = get_job_map(job_id_filter=job_id, repo_filter=repo, ref_filter=ref, event_filter=event, show_canceled=show_canceled)
+    # db.session.add(StoreSearchData(repo, ref, event, job_id, show_canceled))
+    # db.session.commit()
+    # numJobs = db.session.query(StoreSearchData).count()
 
-    registry_job_order = {}
-    for r in registry_names:
-        reg_jobs = {}
-        for q in queue_names:
-            if q in job_map and r in job_map[q]:
-                for id in job_map[q][r]:
-                    if id not in reg_jobs:
-                        reg_jobs[id] = job_map[q][r][id]["job"]
-        registry_job_order[r] = sorted(reg_jobs.keys(), key=lambda id: reg_jobs[id].created_at, reverse=True)
-    logger.error(registry_job_order)
+    # job_map = get_job_map(job_id_filter=job_id, repo_filter=repo, ref_filter=ref, event_filter=event, show_canceled=show_canceled)
 
-    html = '<table class="table"><tr><th scope="col" style="vertical-align:top">Queue:<br/>Status</th>'
+    html = '<table class="table"><tr class="table-dark"><th scope="col" style="vertical-align:top">Queue:</th>'
     for i, q_name in enumerate(queue_names):
-        html += f'<th  scope="col" style="vertical-align:top">{q_name}{"&rArr;tx" if i==0 else "&rArr;callback" if i<(len(queue_names)-1) else ""}</th>'
-    html += '</tr><tr><td>&nbsp</td>'
+        html += f'<th scope="col" style="vertical-align:top">{q_name}{"&rArr;tx" if i==0 else "&rArr;callback" if i<(len(queue_names)-1) else ""}</th>'
+    html += '</tr><tr class="table-secondary"><th scope="col" style="vertical-align:bottom">Status&#8628;</th>'
     for q_name in queue_names:
         html += f'<td style="font-style: italic;font-size:0.8em;vertical-align:top">{queue_desc[q_name]}</td>'
     html += '</tr></thead>'
     for r_name in registry_names:
         if r_name == "canceled" and not show_canceled:
             continue
-        for i, all_job_id in enumerate(registry_job_order[r_name]):
-            html += f'<tr><th scope="row" style="vertical-align: top">{r_name.capitalize() if i == 0 else "&nbsp;"}</th>'
+        r_data = {}
+        job_created = {}
+        for q_name in queue_names:
+            r_data[q_name] = {}
+            queue = Queue(PREFIX+q_name, connection=redis_connection)
+            if r_name == "scheduled":
+                job_ids = queue.scheduled_job_registry.get_job_ids()
+            if r_name == "enqueued":
+                job_ids = queue.get_job_ids()
+            if r_name == "started":
+                job_ids = queue.started_job_registry.get_job_ids()
+            if r_name == "finished":
+                job_ids = queue.finished_job_registry.get_job_ids()
+            if r_name == "failed":
+                job_ids = queue.failed_job_registry.get_job_ids()
+            if r_name == "canceled":
+                job_ids == queue.canceled_job_registry.get_job_ids()
+            for job_id in job_ids:
+                job = queue.fetch_job(job_id)
+                if not job or not job.args:
+                    continue
+                orig_job_id = job_id.split('_')[-1]
+                if orig_job_id not in job_created:
+                    job_created[orig_job_id] = job.created_at
+                r_data[q_name][orig_job_id] = {
+                    "job_id": orig_job_id,
+                    "created_at": job.created_at,
+                    "enqueued_at": job.enqueued_at,
+                    "started_at": job.started_at,
+                    "ended_at": job.ended_at,
+                    "is_scheduled": job.is_scheduled,
+                    "is_queued": job.is_queued,
+                    "is_started": job.is_started,
+                    "is_finished": job.is_finished,
+                    "is_failed": job.is_failed,
+                    "is_canceled": job.is_canceled,
+                    "status": job.get_status(),
+                    "repo": get_repo_from_payload(job.args[0]),
+                    "ref_type": get_ref_type_from_payload(job.args[0]),
+                    "ref": get_ref_from_payload(job.args[0]),
+                    "event": get_event_from_payload(job.args[0]),
+                }
+        reverse_ordered_job_ids = sorted(job_created.keys(), key=lambda id: job_created[id], reverse=True)
+        for i, orig_job_id in enumerate(reverse_ordered_job_ids):
+            html += f'<tr class="table-{reg_colors[r_name]}"><th scope="row" style="vertical-align: top">{r_name.capitalize() if i == 0 else "&nbsp;"}</th>'
             for q_name in queue_names:
                 html += '<td style="vertical-align:top">'
-                if all_job_id in job_map[q_name][r_name]:
-                    html += get_job_list_html(job_map[q_name][r_name][all_job_id]["job"])
+                if orig_job_id in r_data[q_name]:
+                    html += get_job_list_html(r_data[q_name][orig_job_id])
                 else:
                     html += "&nbsp;"
                 html += '</td>'
@@ -712,26 +758,26 @@ def get_relative_time(start=None, end=None):
     return f"{ago}{t}"
 
 
-def get_job_list_html(job):
-    job_id = job.id.split('_')[-1]
-    html = f'<a href="job/{job_id}">{job_id[:5]}</a>: {get_job_list_filter_link(job)}<br/>'
-    if job.ended_at:
-        timeago = f'{get_relative_time(job.ended_at)} ago'
-        runtime = get_relative_time(job.started_at, job.ended_at)
-        end_word = "canceled" if job.is_canceled else "failed" if job.is_failed else "finished"
-        html += f'<div style="padding-left:5px;font-style:italic;" title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}; {end_word}: {job.ended_at.strftime("%Y-%m-%d %H:%M:%S")}">ran for {runtime}, {end_word} {timeago}</div>'
-    elif job.is_started:
-        timeago = f'{get_relative_time(job.started_at)} ago'
-        html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job.started_at.strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
-    elif job.is_queued:
-        timeago = f'{get_relative_time(job.enqueued_at)}'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job.enqueued_at.strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
-    elif job.get_status(True) == "scheduled":
-        timeago = f'{get_relative_time(job.created_at)}'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="scheduled: {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}">schedued for {timeago}</div>'
+def get_job_list_html(job_data):
+    job_id = job_data["job_id"]
+    html = f'<a href="job/{job_id}">{job_id[:5]}</a>: {get_job_list_filter_link(job_data)}<br/>'
+    if job_data["ended_at"]:
+        timeago = f'{get_relative_time(job_data["ended_at"])} ago'
+        runtime = get_relative_time(job_data["started_at"], job_data["ended_at"])
+        end_word = "canceled" if job_data["is_canceled"] else "failed" if job_data["is_failed"] else "finished"
+        html += f'<div style="padding-left:5px;font-style:italic;" title="started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}; {end_word}: {job_data["ended_at"].strftime("%Y-%m-%d %H:%M:%S")}">ran for {runtime}, {end_word} {timeago}</div>'
+    elif job_data["is_started"]:
+        timeago = f'{get_relative_time(job_data["started_at"])} ago'
+        html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
+    elif job_data["is_queued"]:
+        timeago = f'{get_relative_time(job_data["enqueued_at"])}'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job_data["enqueued_at"].strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
+    elif job_data["is_scheduled"]:
+        timeago = f'{get_relative_time(job_data["created_at"])}'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="scheduled: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}">schedued for {timeago}</div>'
     else:
-        timeago = f'{get_relative_time(job.created_at)} ago'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="created: {job.created_at.strftime("%Y-%m-%d %H:%M:%S")}">created {timeago}, status: {job.get_status()}</div>'
+        timeago = f'{get_relative_time(job_data["created_at"])} ago'
+        html += f'<div style="padding-left:5px;font-style:italic;" title="created: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}">created {timeago}, status: {job_data["status"]}</div>'
     return html
 
 
@@ -785,10 +831,10 @@ def get_event_from_payload(payload):
         return 'push'
 
 
-def get_job_list_filter_link(job):
-    repo = get_repo_from_payload(job.args[0])
-    ref = get_ref_from_payload(job.args[0])
-    event = get_event_from_payload(job.args[0])
+def get_job_list_filter_link(job_data):
+    repo = job_data["repo"]
+    ref = job_data["ref"]
+    event = job_data["event"]
     return f'<a href="javascript:void(0)" onClick="filterTable(\'{repo}\')" title="{repo}">{repo.split("/")[-1]}&#128172;</a>=><a href="javascript:void(0)" onClick="filterTable(\'{repo}\', \'{ref}\')">{ref}</a>=><a href="javascript:void(0)" onClick="filterTable(\'{repo}\', \'{ref}\', \'{event}\')">{event}</a>'
 
 
@@ -844,7 +890,7 @@ def cancel_similar_jobs(incoming_payload):
 # end of cancel_similar_jobs function
 
 
-### COPY THIS AND ABOVE #####
+#### COPY THIS AND ABOVE ONLY!!!! ######
 
 
 if __name__ == '__main__':
