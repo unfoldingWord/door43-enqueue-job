@@ -600,6 +600,7 @@ def getJob(job_id):
     if len(first_job["canceled"]) > 0:
         jobs_canceled = []
         for id in first_job["canceled"]:
+            id = id.split('_')[-1]
             jobs_canceled.append(f'<a href="{id}">{id}</a>')
         html += f'<b>This job canceled previous jobs(s):</b> {", ".join(jobs_canceled)}<br/>'
     html += "</p>"
