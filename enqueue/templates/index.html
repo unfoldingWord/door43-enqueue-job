@@ -1,49 +1,143 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
   <title>tX Pipeline Queue Status</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="../static/my-style.css" /> 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../static/my-style.css" />
   <script src="../static/status.js"></script>
-  </head>
-  <body>
-    <div id="status-container">
-      <h1>tX Pipeline Job Status</h1>
-      <form id="queue-form">
-          <b>Payload:</b><br/><textarea id="payload" rows="5" cols="50">{{payload}}</textarea>
-          <br/>
-          <b>DCS_event:</b> <input type="text" id="dcs-event" value="push" />
-          <input type="button" value="Queue Job" onClick="queueJob()"/>
-          <br />
-          <hr />
-      </form>
-      <div id="status-message"><b>To Start: Enter filter criteria (optional) and click "GO!"</b></div>
+</head>
+
+<body>
+  <div id="status-container">
+    <h1>tX Pipeline Job Status</h1>
+    <form id="queue-form">
+      <b>Payload:</b><br /><textarea id="payload" rows="5" cols="50">{{payload}}</textarea>
+      <br />
+      <b>DCS_event:</b> <input type="text" id="dcs-event" value="push" />
+      <input type="button" value="Queue Job" onClick="queueJob()" />
+      <br />
       <hr />
-      <form id="filter-form">
-          <b>Filter:</b>
-          Repo: <input type="text" id="repo" value="{{repo}}" />
-          Ref: <input type="text" id="ref" value="{{ref}}" />
-          Event: <input type="text" id="event" value="{{event}}" />
-          Job ID: <input type="text" id="job-id" value="{{job_id}}" />
-        <br/>
-        <input type="checkbox" id="show-canceled" checked /> <label for="show-canceled">Show canceled</label>
-          <br/>
-          <input type="button" name="filter" value="GO!" onClick="filterTable()"/>
-          <input type="button" name="clear" value="Clear" onClick="(()=>{$('#repo').val('');$('#ref').val('');$('#event').val('');$('#job-id').val('');filterTable()})()"/>
-          <div id="loading" class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-      </form>
-      <hr/>
-      <br/>
-      <div class="float-end">Refresh every <input type="text" id="refresh" value="120" size="3" /> seconds</div>
-      <div id="status-results" style="clear:both">
-        <div id="status-table"></div>
-     </div>
+    </form>
+    <div id="status-message"><b>To Start: Enter filter criteria (optional) and click "GO!"</b></div>
+    <hr />
+    <form id="filter-form">
+      <b>Filter:</b>
+      Repo: <input type="text" id="repo" value="{{repo}}" />
+      Ref: <input type="text" id="ref" value="{{ref}}" />
+      Event: <input type="text" id="event" value="{{event}}" />
+      Job ID: <input type="text" id="job-id" value="{{job_id}}" />
+      <br />
+      <input type="checkbox" id="show-canceled" checked /> <label for="show-canceled">Show canceled</label>
+      <br />
+      <input type="button" name="filter" value="GO!" onClick="filterTable()" />
+      <input type="button" name="clear" value="Clear"
+        onClick="(()=>{$('#repo').val('');$('#ref').val('');$('#event').val('');$('#job-id').val('');filterTable()})()" />
+      <div id="loading" class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </form>
+    <hr />
+    <br />
+    <div class="float-end">Refresh every <input type="text" id="refresh" value="10" size="3" /> seconds</div>
+    <div id="status-results" style="clear:both">
+      <div id="status-table" class="responsive">
+        <table class="table accordion">
+          <tbody>
+            <tr class="table-dark">
+              <th scope="col" style="vertical-align:top">Queue:</th>
+              <th scope="col" style="vertical-align:top">door43_job_handler⇒tx</th>
+              <th scope="col" style="vertical-align:top">tx_job_handler⇒callback</th>
+              <th scope="col" style="vertical-align:top">tx_job_handler_priority⇒callback</th>
+              <th scope="col" style="vertical-align:top">tx_job_handler_pdf⇒callback</th>
+              <th scope="col" style="vertical-align:top">door43_job_handler_callback</th>
+            </tr>
+            <tr class="table-secondary">
+              <th scope="col" style="vertical-align:bottom">Status↴</th>
+              <td style="font-style: italic;font-size:0.8em;vertical-align:top">Lints files &amp; massages files for tX,
+                uploads to cloud, sends work request to tx_job_handler</td>
+              <td style="font-style: italic;font-size:0.8em;vertical-align:top">Handles branches that are not master
+                (user branches), converts to HTML, uploads result to cloud, sends a work request to door43 callback</td>
+              <td style="font-style: italic;font-size:0.8em;vertical-align:top">Handles master branch and tags
+                (releass), converting to HTML, uploads result to cloud, sends a work request to door43 callback</td>
+              <td style="font-style: italic;font-size:0.8em;vertical-align:top">Handles PDF requests, converting to PDF,
+                uploads result to cloud, sends a work request door43 callback</td>
+              <td style="font-style: italic;font-size:0.8em;vertical-align:top">Fetches coverted files from cloud,
+                deploys to Door43 Preview (door43.org) for HTML and PDF jobs</td>
+            </tr>
+            <tr id="scheduledHeaderRow" class="table-primary">
+              <th scope="row" style="vertical-align: top">
+                <button id="scheduledToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".scheduledRow" aria-expanded="true" aria-controls="scheduledRow" style="font-weight:bold">
+                  Scheduled
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="scheduledCount">0</span> in the last 24 hours)
+              </td>
+            </tr>
+            <tr id="enqueuedHeaderRow" class="table-secondary">
+              <th scope="row" style="vertical-align: top">
+                <button id="enqueuedToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".enqueuedRow" aria-expanded="true" aria-controls="enqueuedRow" style="font-weight:bold">
+                  Enqueued
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="enqueuedCount">0</span> in the last 24 hours)
+              </td>
+            </tr>
+            <tr  id="startedHeaderRow" class="table-success">
+              <th scope="row" style="vertical-align: top">
+                <button id="startedToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".startedRow" aria-expanded="true" aria-controls="startedRow" style="font-weight:bold">
+                  Started
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="startedCount">0</span> in the last 24 hours)
+              </td>
+            </tr>
+            <tr id="finishedHeaderRow" class="table-info">
+              <th scope="row" style="vertical-align: top">
+                <button id="finishedToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".finishedRow" aria-expanded="true" aria-controls="finishedRow" style="font-weight:bold">
+                  Finished
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="finishedCount">0</span> in the last 24 hours)
+              </td>
+            </tr>
+            <tr id="failedHeaderRow" class="table-danger">
+              <th scope="row" style="vertical-align: top">
+                <button id="failedToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".failedRow" aria-expanded="true" aria-controls="failedRow" style="font-weight:bold">
+                  Failed
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="failedCount">0</span> in the last 24 hours)
+              </td>
+            </th>
+            </tr>
+            <tr id="canceledHeaderRow" class="table-light">
+              <th scope="row" style="vertical-align: top">
+                <button id="canceledToggle" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target=".canceledRow" aria-expanded="true" aria-controls="canceledRow" style="font-weight:bold">
+                  Canceled
+                </button>
+              </th>
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                (<span id="canceledCount">0</span> total)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>
