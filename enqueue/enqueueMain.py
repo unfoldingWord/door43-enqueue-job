@@ -656,7 +656,8 @@ def get_queue_job_info_html(job_data):
         try:
             html += json.dumps(job_data["payload"], indent=2)
         except:
-            html += job_data["payload"]
+            pass 
+            # html += job_data["payload"]
         html += f'</textarea>'
     if job_data["queue_name"] == DOOR43_JOB_HANDLER_QUEUE_NAME:
         html += '''<br/><br/>
