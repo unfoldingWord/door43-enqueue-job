@@ -417,10 +417,10 @@ def status_page():
 @app.route('/get_status_table', methods=['POST'])
 def get_status_table():
     status_data = request.get_json()
-    repo = status_data['repo']
-    ref = status_data['ref']
-    event = status_data['event']
-    job_id = status_data['job_id']
+    repo_filter = status_data['repo']
+    ref_filter = status_data['ref']
+    event_filter = status_data['event']
+    job_id_filter = status_data['job_id']
     show_canceled = status_data['show_canceled']  
 
     logger.error(status_data)      
@@ -465,6 +465,14 @@ def get_status_table():
                 orig_job_id = job_id.split('_')[-1]
                 if orig_job_id not in job_created:
                     job_created[orig_job_id] = job.created_at
+                repo = get_repo_from_payload(job.args[0])
+                ref_type = get_ref_type_from_payload(job.args[0])
+                ref = get_ref_from_payload(job.args[0])
+                event = get_event_from_payload(job.args[0])
+                if (repo_filter and repo_filter != repo) \
+                    or (ref_filter and ref_filter != ref) \
+                    or (event_filter and event_filter != event):
+                    continue
                 r_data[q_name][orig_job_id] = {
                     "job_id": orig_job_id,
                     "created_at": job.created_at,
@@ -478,10 +486,10 @@ def get_status_table():
                     "is_failed": job.is_failed,
                     "is_canceled": job.is_canceled,
                     "status": job.get_status(),
-                    "repo": get_repo_from_payload(job.args[0]),
-                    "ref_type": get_ref_type_from_payload(job.args[0]),
-                    "ref": get_ref_from_payload(job.args[0]),
-                    "event": get_event_from_payload(job.args[0]),
+                    "repo": repo,
+                    "ref_type": ref_type,
+                    "ref": ref,
+                    "event": event,
                 }
         reverse_ordered_job_ids = sorted(job_created.keys(), key=lambda id: job_created[id], reverse=True)
         for i, orig_job_id in enumerate(reverse_ordered_job_ids):
