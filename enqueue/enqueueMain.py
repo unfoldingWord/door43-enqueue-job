@@ -492,7 +492,13 @@ def get_status_table():
                 if orig_job_id in r_data[q_name]:
                     row_html += get_job_list_html(r_data[q_name][orig_job_id])
                 else:
-                    row_html += "&nbsp;"
+                    if r_name == "finished" \
+                        and ("tx_job_handler" in r_data and orig_job_id in r_data["tx_job_handler"] \
+                        or "tx_job_handler_priority" in r_data and orig_job_id in r_data["tx_job_handler_priority"] \
+                        or "tx_job_handler_pdf" in r_data and orig_job_id in r_data["tx_job_handler_pdf"]):
+                        row_html += '<div class="text-center">N/A</div>'
+                    else:
+                        row_html += "&nbsp;"
                 row_html += '</td>'
             row_html += '</tr>'
             table_rows[r_name]["rows"].append(row_html)
