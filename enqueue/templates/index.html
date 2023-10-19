@@ -19,17 +19,16 @@
 <body>
   <div id="status-container">
     <h1>tX Pipeline Job Status</h1>
-    <form id="queue-form">
-      <b>Payload:</b><br /><textarea id="payload" rows="5" cols="50">{{payload}}</textarea>
-      <br />
-      <b>DCS_event:</b> <input type="text" id="dcs-event" value="push" />
-      <input type="button" value="Queue Job" onClick="queueJob()" />
-      <br />
+    <div id="queue-form-wrapper">
+      <form id="queue-form">
+        <b>Payload:</b><br /><textarea id="payload" rows="5" cols="50">{{payload}}</textarea>
+        <br />
+        <b>DCS_event:</b> <input type="text" id="dcs-event" value="push" />
+        <input type="button" value="Queue Job" onClick="queueJob()" />
+        <br />
+      </form>
       <hr />
-    </form>
-    <div id="status-message"></div>
-    <div id="start-message"><b>To Start: Enter filter criteria (optional) and click "GO!"</b></div>
-    <hr />
+    </div>
     <form id="filter-form">
       <b>Filter:</b>
       Repo: <input type="text" id="repo" value="{{repo}}" />
@@ -43,12 +42,13 @@
         <span class="visually-hidden">Loading...</span>
       </div>
     </form>
-    <hr />
+    <div id="status-message"></div>
+    <div id="start-message"><b>To Start, enter filter criteria, or just click "GO!"</b></div>
     <br />
-    <div class="float-end">Refresh every <input type="text" id="refresh" value="10" size="3" /> seconds</div>
     <div id="status-results" style="clear:both">
-      <div id="status-table" class="responsive" style="display:none">
-        <table class="table accordion">
+      <div id="status-table-wrapper" class="responsive" style="display:none">
+        <div class="float-end p-2">Refresh every <input type="text" id="refresh" value="10" size="3" /> seconds&nbsp;<i class="fa-solid fa-info-circle" data-toggle="tooltip" data-placement="top" title="Enter 0 to not refresh"></i></div>
+        <table id="status-table" class="table accordion">
           <tbody>
             <tr class="table-dark">
               <th scope="col" style="vertical-align:top">Queue:</th>
@@ -107,11 +107,9 @@
                   Finished
                 </button>
               </th>
-              <td colspan="4" style="font-style:italic; vertical-align: middle;">
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
                 <span id="finishedCount">0 jobs</span> in the last 24 hours
-              </td>
-              <td style="font-style:italic; vertical-align: middle;">
-                <button id="removeFinishedButton" onClick="removeFinished()">Remove old finished jobs</button>
+                <i onClick="removeFinished()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Finished Jobs > 3 hour old"></i>
               </td>
             </tr>
             <tr id="failedHeaderRow" class="table-danger">
@@ -120,11 +118,9 @@
                   Failed
                 </button>
               </th>
-              <td colspan="4" style="font-style:italic; vertical-align: middle;">
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
                 <span id="failedCount">0 jobs</span>
-              </td>
-              <td style="font-style:italic; vertical-align: middle;">
-                <button id="remnoveFinishedButton" onClick="removeFailed()">Remove old failed jobs</button>
+                <i onClick="removeFailed()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Failed Jobs > 24 hours old"></i>
               </td>
             </th>
             </tr>
@@ -134,11 +130,9 @@
                   Canceled
                 </button>
               </th>
-              <td colspan="4" style="font-style:italic; vertical-align: middle;">
+              <td colspan="5" style="font-style:italic; vertical-align: middle;">
                 <span id="canceledCount">0</span> jobs
-              </td>
-              <td style="font-style:italic; vertical-align: middle;">
-                <button id="removeFinishedButton" onClick="removeCanceled()">Remove old canceled jobs</button>
+                <i onClick="removeCanceled()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Canceled Jobs > 3 hours old"></i>
               </td>
             </tr>
           </tbody>

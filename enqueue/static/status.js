@@ -10,6 +10,7 @@ $(document).ready(() => {
   ) {
     filterTable();
   }
+  $('[data-toggle="tooltip"]').tooltip();
 });
 
 var filterTableCallID = 0;
@@ -62,6 +63,7 @@ function filterTable(repo, ref, dcs_event) {
   var $statusMessage = $("#status-message");
   var $startMessage = $("#start-message");
   var $refresh = $("#refresh");
+  var $statusTableWrapper = $("#status-table-wrapper");
   var $statusTable = $("#status-table");
 
   $loading.show();
@@ -78,9 +80,10 @@ function filterTable(repo, ref, dcs_event) {
     dataType: "json",
     success: function (result) {
       updateTableRows(result.table_rows);
-      $statusTable.show();
-      if ($refresh.val() && $refresh.val() != "0")
+      $statusTableWrapper.show();
+      if ($refresh.val() && $refresh.val() != "0" && $refresh.val() != "-1") {
         filterTableCallID = setTimeout(filterTable, $refresh.val() * 1000);
+      }
     },
     error: function (result) {
       $statusMessage.html("ERROR OCCURRED!");
@@ -93,7 +96,6 @@ function filterTable(repo, ref, dcs_event) {
 }
 
 function updateTableRows(table_rows) {
-  var $statusTable = $("#status-table");
   Object.keys(table_rows).forEach(registry => {
     var $headerRow = $("#"+registry+"HeaderRow");
     var $toggle = $("#"+registry+"Toggle");

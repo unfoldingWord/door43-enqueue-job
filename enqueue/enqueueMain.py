@@ -488,7 +488,7 @@ def get_status_table():
         for orig_job_id in reverse_ordered_job_ids:
             row_html = f'<tr class="table-{reg_colors[r_name]} {r_name}Row" aria-labelledby="{r_name}HeaderRow" data-parent="#{r_name}HeaderRow"><td scope="row">&nbsp;</th>'
             for q_name in queue_names:
-                row_html += '<td style="vertical-align:top">'
+                row_html += '<td style="vertical-align:top; word">'
                 if orig_job_id in r_data[q_name]:
                     row_html += get_job_list_html(r_data[q_name][orig_job_id])
                 else:
@@ -703,6 +703,7 @@ def get_queue_job_info_html(job_data):
             if (xhr.readyState === 4) {
                 alert(xhr.response);
                 console.log(xhr.response);
+                window.location.href = "../?job_id="+JSON.parse(xhr.response).job_id;
             }
         };
         xhr.send(JSON.stringify(payloadJSON));
@@ -762,15 +763,15 @@ def get_job_list_html(job_data):
     ref = job_data["ref"]
     event = job_data["event"]
 
-    html = f'ID:&nbsp;<a href="javascript:void(0)" onClick="$(\'#job-id\').val(\'{job_id}\');filterTable();return false;">{job_id.split("-")[0]}</a>&nbsp;<a href="job/{job_id}" title="View Job Info"><i class="fa-solid fa-info-circle"></i></a><br/>'+ \
-            f'<div style="padding-left:2em; text-indent: -2em">Repo:&nbsp;<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"].split("/")[0]}\')" title="Owner">'+ \
+    html = f'ID:&nbsp;<a href="javascript:void(0)" onClick="$(\'#job-id\').val(\'{job_id}\');filterTable();return false;">{job_id.split("-")[0]}</a>&nbsp;<a href="job/{job_id}" data-toggle="tooltip" data-placement="top" title="View Job Info"><i class="fa-solid fa-info-circle"></i></a><br/>'+ \
+           f'<div style="padding-left:2em; text-indent: -2em">Repo:&nbsp;<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"].split("/")[0]}\')" data-toggle="tooltip" data-placement="top" title="Owner">'+ \
             f'<span class="text-nowrap">{job_data["repo"].split("/")[0]}</a></span> / '+ \
-            f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" title="Repo">'+ \
+            f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" data-toggle="tooltip" data-placement="top" title="Repo">'+ \
             f'<span class="text-nowrap">{job_data["repo"].split("/")[-1]}</a></span></div>'+ \
             f'{ref_type.capitalize()}:&nbsp;<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{ref}\')">'+ \
             f'<span class="text-nowrap">{ref}</span>'+ \
             f'</a>'+ \
-            f'&nbsp;(<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')" title="Type of job request">'+ \
+            f'&nbsp;(<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')" data-toggle="tooltip" data-placement="top" title="Type of job request">'+ \
             f'{event}'+ \
             f'</a>)<br/>'
 
@@ -796,7 +797,7 @@ def get_job_list_html(job_data):
         timeago = f'{get_relative_time(job_data["created_at"])} ago'
         title = f'created: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}'
         status = f'created {timeago}, status: {job_data["status"]}'
-    html += f'<div style="padding-left:1em;font-style:italic;" title="{title}">{status}</div>'
+    html += f'<div style="padding-left:1em;font-style:italic;" data-toggle="tooltip" data-placement="top" title="{title}">{status}</div>'
 
     return html
 
@@ -858,7 +859,7 @@ def get_dcs_link(job_data):
         return 'INVALID'
     text = f'{job_data["repo"].split("/")[-1]}=>{job_data["repo"]}=>{job_data["ref"]}'
     if job_data["event"] != "delete":
-        return f'<a href="https://git.door43.org/{job_data["repo"]}/src/{job_data["ref_type"]}/{job_data["ref"]}" target="_blank" title="{job_data["repo"]}/src/{job_data["type"]}/{job_data["ref"]}">{text}</a>'
+        return f'<a href="https://git.door43.org/{job_data["repo"]}/src/{job_data["ref_type"]}/{job_data["ref"]}" target="_blank" data-toggle="tooltip" data-placement="top" title="{job_data["repo"]}/src/{job_data["type"]}/{job_data["ref"]}">{text}</a>'
     else:
         return text
 
