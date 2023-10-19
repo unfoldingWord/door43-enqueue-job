@@ -433,18 +433,20 @@ def get_status_table():
         for q_name in queue_names:
             r_data[q_name] = {}
             queue = Queue(PREFIX+q_name, connection=redis_connection)
+
             if r_name == "scheduled":
                 job_ids = queue.scheduled_job_registry.get_job_ids()
-            if r_name == "enqueued":
+            elif r_name == "enqueued":
                 job_ids = queue.get_job_ids()
-            if r_name == "started":
+            elif r_name == "started":
                 job_ids = queue.started_job_registry.get_job_ids()
-            if r_name == "finished":
+            elif r_name == "finished":
                 job_ids = queue.finished_job_registry.get_job_ids()
-            if r_name == "failed":
+            elif r_name == "failed":
                 job_ids = queue.failed_job_registry.get_job_ids()
-            if r_name == "canceled":
+            elif r_name == "canceled":
                 job_ids = queue.canceled_job_registry.get_job_ids()
+
             for job_id in job_ids:
                 orig_job_id = job_id.split('_')[-1]
                 job = queue.fetch_job(job_id)
@@ -554,8 +556,6 @@ def getJob(job_id):
                     job_data["canceled_by"] = orig_id
         job_datas.append(job_data)
 
-    logger.error(job_datas)
-
     html = f'<p><a href="../" style="text-decoration:none">&larr; Go back</a></p>'
 
     if len(job_datas) == 0:
@@ -608,7 +608,7 @@ def clearFailed():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job and job.is_failed and (datetime.utcnow() - job.ended_at) >= timedelta(hours=hours):
+            if job and (datetime.now() - job.ended_at) >= timedelta(hours=hours):
                 job.delete()
     return "Failed jobs cleared"
 
@@ -620,7 +620,7 @@ def clearCanceled():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job and job.is_canceled and (datetime.utcnow() - job.created_at) >= timedelta(hours=hours):
+            if job and (datetime.now() - job.created_at) >= timedelta(hours=hours):
                 job.delete()
     return "Canceled jobs cleared"
 
@@ -708,7 +708,7 @@ def get_elapsed_time(start, end):
 
 def get_relative_time(start=None, end=None):
     if not end:
-        end = datetime.utcnow()
+        end = datetime.now()
     if not start:
         start = end
     ago = round((end - start).total_seconds())
