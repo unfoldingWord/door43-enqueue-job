@@ -466,6 +466,7 @@ def get_status_table():
                     job_created[orig_job_id] = job.created_at
                 r_data[q_name][orig_job_id] = {
                     "job_id": orig_job_id,
+                    "queue_job_id": job_id,
                     "created_at": job.created_at,
                     "enqueued_at": job.enqueued_at,
                     "started_at": job.started_at,
@@ -771,7 +772,7 @@ def get_job_list_html(job_data):
     ref = job_data["ref"]
     event = job_data["event"]
 
-    html = f'ID:&nbsp;<a href="javascript:void(0)" onClick="$(\'#job-id\').val(\'{job_id}\');filterTable();return false;">{job_id.split("-")[0]}</a>&nbsp;<a href="job/{job_id}" data-toggle="tooltip" data-placement="top" title="View Job Info"><i class="fa-solid fa-info-circle"></i></a><br/>'+ \
+    html = f'ID:&nbsp;<a href="javascript:void(0)" onClick="$(\'#job-id\').val(\'{job_id}\');filterTable();return false;" data-toggle="tooltip" data-placement="top" title="{job_data["queue_job_id"]}">{job_id.split("-")[0]}</a>&nbsp;<a href="job/{job_id}" data-toggle="tooltip" data-placement="top" title="View Job Info"><i class="fa-solid fa-info-circle"></i></a><br/>'+ \
            f'<div style="padding-left:2em; text-indent: -2em">Repo:&nbsp;<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"].split("/")[0]}\')" data-toggle="tooltip" data-placement="top" title="Owner">'+ \
             f'<span class="text-nowrap">{job_data["repo"].split("/")[0]}</a></span> / '+ \
             f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" data-toggle="tooltip" data-placement="top" title="Repo">'+ \
