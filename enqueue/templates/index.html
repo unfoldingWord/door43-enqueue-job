@@ -26,7 +26,8 @@
       <br />
       <hr />
     </form>
-    <div id="status-message"><b>To Start: Enter filter criteria (optional) and click "GO!"</b></div>
+    <div id="status-message"></div>
+    <div id="start-message"><b>To Start: Enter filter criteria (optional) and click "GO!"</b></div>
     <hr />
     <form id="filter-form">
       <b>Filter:</b>
@@ -105,8 +106,11 @@
                   Finished
                 </button>
               </th>
-              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+              <td colspan="4" style="font-style:italic; vertical-align: middle;">
                 <span id="finishedCount">0 jobs</span> in the last 24 hours
+              </td>
+              <td style="font-style:italic; vertical-align: middle;">
+                <button id="removeFinishedButton" onClick="removeFinished()">Remove old finished jobs</button>
               </td>
             </tr>
             <tr id="failedHeaderRow" class="table-danger">
@@ -115,8 +119,11 @@
                   Failed
                 </button>
               </th>
-              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+              <td colspan="4" style="font-style:italic; vertical-align: middle;">
                 <span id="failedCount">0 jobs</span>
+              </td>
+              <td style="font-style:italic; vertical-align: middle;">
+                <button id="remnoveFinishedButton" onClick="removeFailed()">Remove old failed jobs</button>
               </td>
             </th>
             </tr>
@@ -126,8 +133,11 @@
                   Canceled
                 </button>
               </th>
-              <td colspan="5" style="font-style:italic; vertical-align: middle;">
+              <td colspan="4" style="font-style:italic; vertical-align: middle;">
                 <span id="canceledCount">0</span> jobs
+              </td>
+              <td style="font-style:italic; vertical-align: middle;">
+                <button id="removeFinishedButton" onClick="removeCanceled()">Remove old canceled jobs</button>
               </td>
             </tr>
           </tbody>

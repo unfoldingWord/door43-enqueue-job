@@ -12,7 +12,7 @@ $(document).ready(() => {
   }
 });
 
-var filterTableCallID;
+var filterTableCallID = 0;
 
 function filterTable(repo, ref, dcs_event) {
   var queryParams = new URLSearchParams();
@@ -24,12 +24,18 @@ function filterTable(repo, ref, dcs_event) {
 
   if (repo) {
     $repo.val(repo);
+    $ref.val("");
+    $event.val("");
+    $job_id.val("");
   }
   if (ref) {
     $ref.val(ref);
+    $event.val("");
+    $job_id.val("");
   }
   if (dcs_event) {
     $event.val(dcs_event);
+    $job_id.val("");
   }
 
   if ($repo.val()) {
@@ -52,15 +58,18 @@ function filterTable(repo, ref, dcs_event) {
     event: $event.val(),
     job_id: $job_id.val(),
   };
-  console.log(searchCriteria);
 
   var $statusMessage = $("#status-message");
+  var $startMessage = $("#start-message");
   var $refresh = $("#refresh");
   var $statusTable = $("#status-table");
 
   $loading.show();
-  $statusMessage.html("");
-  clearTimeout(filterTableCallID);
+  $startMessage.remove();
+  if (filterTableCallID > 0) {
+    clearTimeout(filterTableCallID);
+    filterTableCallID = 0;
+  }
   $.ajax({
     type: "POST",
     url: "../get_status_table_rows",
@@ -70,9 +79,8 @@ function filterTable(repo, ref, dcs_event) {
     success: function (result) {
       updateTableRows(result.table_rows);
       $statusTable.show();
-      if ($refresh.val() && $refresh.val() != "0") {
+      if ($refresh.val() && $refresh.val() != "0")
         filterTableCallID = setTimeout(filterTable, $refresh.val() * 1000);
-      }
     },
     error: function (result) {
       $statusMessage.html("ERROR OCCURRED!");
@@ -87,11 +95,9 @@ function filterTable(repo, ref, dcs_event) {
 function updateTableRows(table_rows) {
   var $statusTable = $("#status-table");
   Object.keys(table_rows).forEach(registry => {
-    console.log(registry);
     var $headerRow = $("#"+registry+"HeaderRow");
     var $toggle = $("#"+registry+"Toggle");
     var expanded = $toggle.attr("aria-expanded") == "true";
-    console.log($headerRow.attr("aria-expanded"));
     var $lastRow = $headerRow;
     $("."+registry+"Row").remove();
     if (table_rows[registry].rows.length) {
@@ -128,7 +134,39 @@ function queueJob() {
     data: payload.val(),
     contentType: "application/json",
     success: function (result) {
+      $statusMessage.html("Job queued. Resulting payload: "+JSON.stringify(result));
+      alert("Job queued. Filtering by the new Job ID.");
+      $("#repo").val("");
+      $("#ref").val("");
+      $("#event").val("");
+      $("#job-id").val(result.job_id);
+      filterTable();
+    },
+    error: function (result) {
+      $statusMessage.html("ERROR: " + result.error);
+      console.log("ERROR!");
+      console.log(result);
+      alert(result);
+    },
+    complete: function (result) {
+      $loading.hide();
+    },
+  });
+}
+
+function removeFinished() {
+  var $statusMessage = $("#status-message");
+  if (confirm("Are you sure you want to remove all finished job results older than 3 hours? This cannot be undone.") == false) {
+    return;
+  }
+
+  $loading.show();
+  $.ajax({
+    type: "GET",
+    url: "remove/finished",
+    success: function (result) {
       $statusMessage.html(result.message);
+      alert(result.message);
       filterTable();
     },
     error: function (result) {
@@ -136,8 +174,49 @@ function queueJob() {
       console.log("ERROR!");
       console.log(result);
     },
-    complete: function (result) {
-      $loading.hide();
+  });
+}
+
+function removeFailed() {
+  if (confirm("Are you sure you want to remove all failed job results older than 24 hours? This cannot be undone.") == false) {
+    return;
+  }
+  var $statusMessage = $("#status-message");
+  $loading.show();
+  $.ajax({
+    type: "GET",
+    url: "remove/failed",
+    success: function (result) {
+      $statusMessage.html(result.message);
+      alert(result.message);
+      filterTable();
+    },
+    error: function (result) {
+      $statusMessage.html("ERROR: " + result.error);
+      console.log("ERROR!");
+      console.log(result);
+    },
+  });
+}
+
+function removeCanceled() {
+  if (confirm("Are you sure you want to remove all canceled job results older than 3 hours? This cannot be undone.") == false) {
+    return;
+  }
+  var $statusMessage = $("#status-message");
+  $loading.show();
+  $.ajax({
+    type: "GET",
+    url: "remove/canceled",
+    success: function (result) {
+      $statusMessage.html(result.message);
+      alert(result.message);
+      filterTable();
+    },
+    error: function (result) {
+      $statusMessage.html("ERROR: " + result.error);
+      console.log("ERROR!");
+      console.log(result);
     },
   });
 }

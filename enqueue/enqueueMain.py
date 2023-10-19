@@ -399,7 +399,7 @@ def status_page():
   f = open(os.path.join(basedir, 'payload.json'))
   payload = f.read()
   f.close()
-  
+
   repo = request.args.get("repo", "")
   ref = request.args.get("ref", "")
   event = request.args.get("event", "")
@@ -415,7 +415,7 @@ def get_status_table():
     event_filter = status_data['event']
     job_id_filter = status_data['job_id']
 
-    logger.error(status_data)      
+    logger.error(status_data)
 
     # db.session.add(StoreSearchData(repo, ref, event, job_id))
     # db.session.commit()
@@ -427,7 +427,7 @@ def get_status_table():
             "name": r_name,
             "color": reg_colors[r_name],
             "rows": [],
-        }   
+        }
         r_data = {}
         job_created = {}
         for q_name in queue_names:
@@ -458,7 +458,7 @@ def get_status_table():
                 ref_type = get_ref_type_from_payload(job.args[0])
                 ref = get_ref_from_payload(job.args[0])
                 event = get_event_from_payload(job.args[0])
-                if (repo_filter and repo_filter != repo) \
+                if (repo_filter and repo_filter not in repo) \
                     or (ref_filter and ref_filter != ref) \
                     or (event_filter and event_filter != event):
                     continue
@@ -564,7 +564,7 @@ def getJob(job_id):
     jobs_html = ""
     for job_data in job_datas:
         jobs_html += get_queue_job_info_html(job_data)
-    
+
     first_job = job_datas[0]
     last_job = job_datas[-1]
 
@@ -601,28 +601,58 @@ def getJob(job_id):
     return html
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status/clear/failed", methods=['GET'])
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/remove/finished", methods=['GET'])
+def clearFinished():
+    hours = request.args.get("hours", 3)
+    count = 0
+    for queue_name in queue_names:
+        queue = Queue(queue_name, connection=redis_connection)
+        for job_id in queue.finished_job_registry.get_job_ids():
+            job = queue.fetch_job(job_id)
+            if job and (datetime.now() - job.created_at) >= timedelta(hours=hours):
+                job.delete()
+                count += 1
+    if count == 0:
+        message = f'There are no finished jobs older than {hours} hour{"s" if hours == 0 or hours > 1 else ""} to remove.'
+    else:
+        message = f'Removed {count} finished job{"s" if count == 0 or count > 1 else ""} older than {hours} hour{"s" if hours == 0 or hours > 1 else ""}.'
+    return jsonify({"message": message})
+
+
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/remove/failed", methods=['GET'])
 def clearFailed():
     hours = request.args.get("hours", 24)
+    count = 0
     for queue_name in queue_names:
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
             if job and (datetime.now() - job.ended_at) >= timedelta(hours=hours):
                 job.delete()
-    return "Failed jobs cleared"
+                count += 1
+    if count == 0:
+        message = f'There are no failed jobs older than {hours} hour{"s" if hours == 0 or hours > 1 else ""} to remove.'
+    else:
+        message = f'Removed {count} failed job{"s" if count == 0 or count > 1 else ""} older than {hours} hour{"s" if hours == 0 or hours > 1 else ""}.'
+    return jsonify({"message": message})
 
 
-@app.route('/'+WEBHOOK_URL_SEGMENT+"status/clear/canceled", methods=['GET'])
+@app.route('/'+WEBHOOK_URL_SEGMENT+"status/remove/canceled", methods=['GET'])
 def clearCanceled():
     hours = request.args.get("hours", 3)
+    count = 0
     for queue_name in queue_names:
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
             if job and (datetime.now() - job.created_at) >= timedelta(hours=hours):
                 job.delete()
-    return "Canceled jobs cleared"
+                count += 1
+    if count == 0:
+        message = f'There are no canceled jobs older than {hours} hour{"s" if hours == 0 or hours > 1 else ""} to remove.'
+    else:
+        message = f'Removed {count} canceled job{"s" if count == 0 or count > 1 else ""} older than {hours} hour{"s" if hours == 0 or hours > 1 else ""}.'
+    return jsonify({"message": message})
 
 
 #### FUNCS FOR GENERATING TABLE
@@ -727,24 +757,47 @@ def get_relative_time(start=None, end=None):
 
 def get_job_list_html(job_data):
     job_id = job_data["job_id"]
-    html = f'<a href="job/{job_id}">{job_id[:5]}</a>: {get_job_list_filter_link(job_data)}<br/>'
+    repo = job_data["repo"]
+    ref_type = job_data["ref_type"]
+    ref = job_data["ref"]
+    event = job_data["event"]
+
+    html = f'ID: <a href="job/{job_id}">{job_id[:5]}</a><br/>'+ \
+            f'Repo: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"].split("/")[0]}\')" title="Owner">'+ \
+            f'{job_data["repo"].split("/")[0]}</a>/'+ \
+            f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" title="Repo">'+ \
+            f'{job_data["repo"].split("/")[-1]}</a><br/>'+ \
+            f'{ref_type.capitalize()}: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{ref}\')">'+ \
+            f'{ref}'+ \
+            f'</a><br/>'+ \
+            f'Event: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')" title="Type of job request">'+ \
+            f'{job_data["event"]}'+ \
+            f'</a><br/>'
+
     if job_data["ended_at"]:
         timeago = f'{get_relative_time(job_data["ended_at"])} ago'
         runtime = get_relative_time(job_data["started_at"], job_data["ended_at"])
         end_word = "canceled" if job_data["is_canceled"] else "failed" if job_data["is_failed"] else "finished"
-        html += f'<div style="padding-left:5px;font-style:italic;" title="started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}; {end_word}: {job_data["ended_at"].strftime("%Y-%m-%d %H:%M:%S")}">ran for {runtime}, {end_word} {timeago}</div>'
+        title = f'started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}; {end_word}: {job_data["ended_at"].strftime("%Y-%m-%d %H:%M:%S")}'
+        status = f'ran for {runtime}, {end_word} {timeago}'
     elif job_data["is_started"]:
         timeago = f'{get_relative_time(job_data["started_at"])} ago'
-        html += f'<div style="padding-left:5px;font-style:italic"  title="started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}">started {timeago}</div>'
+        title = f'started: {job_data["started_at"].strftime("%Y-%m-%d %H:%M:%S")}'
+        status = f'started {timeago}'
     elif job_data["is_queued"]:
         timeago = f'{get_relative_time(job_data["enqueued_at"])}'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="queued: {job_data["enqueued_at"].strftime("%Y-%m-%d %H:%M:%S")}">queued for {timeago}</div>'
+        title = f'queued: {job_data["enqueued_at"].strftime("%Y-%m-%d %H:%M:%S")}'
+        status = f'queued for {timeago}'
     elif job_data["is_scheduled"]:
         timeago = f'{get_relative_time(job_data["created_at"])}'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="scheduled: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}">schedued for {timeago}</div>'
+        title = f'scheduled: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}'
+        status = f'schedued for {timeago}'
     else:
         timeago = f'{get_relative_time(job_data["created_at"])} ago'
-        html += f'<div style="padding-left:5px;font-style:italic;" title="created: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}">created {timeago}, status: {job_data["status"]}</div>'
+        title = f'created: {job_data["created_at"].strftime("%Y-%m-%d %H:%M:%S")}'
+        status = f'created {timeago}, status: {job_data["status"]}'
+    html += f'<div style="padding-left:1em;font-style:italic;" title="{title}">{status}</div>'
+
     return html
 
 
@@ -756,7 +809,7 @@ def get_repo_from_payload(payload):
     elif "repository" in payload and "full_name" in payload["repository"]:
         return payload["repository"]["full_name"]
 
-  
+
 def get_ref_from_payload(payload):
     if not payload:
         return None
@@ -798,20 +851,6 @@ def get_event_from_payload(payload):
         return payload['DCS_event']
     else:
         return 'push'
-
-
-def get_job_list_filter_link(job_data):
-    repo = job_data["repo"]
-    ref = job_data["ref"]
-    event = job_data["event"]
-    return f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" title="{job_data["repo"]}">'+ \
-            f'{job_data["repo"].split("/")[-1]}&#128172;</a>'+ \
-            f'=><a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{ref}\')">'+ \
-            f'{ref}'+ \
-            f'</a>'+ \
-            f'=><a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')">'+ \
-            f'{job_data["event"]}'+ \
-            f'</a>'
 
 
 def get_dcs_link(job_data):
