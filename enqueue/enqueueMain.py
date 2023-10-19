@@ -493,7 +493,7 @@ def get_status_table():
                     row_html += get_job_list_html(r_data[q_name][orig_job_id])
                 else:
                     if r_name == "finished" \
-                        and (q_name == "tx_job_handler" or q_name == "tx_job_handler_priortiy" or q_name == "tx_job_handler_pdf") \
+                        and (q_name == "tx_job_handler" or q_name == "tx_job_handler_priority" or q_name == "tx_job_handler_pdf") \
                         and ("tx_job_handler" in r_data and orig_job_id in r_data["tx_job_handler"] \
                         or "tx_job_handler_priority" in r_data and orig_job_id in r_data["tx_job_handler_priority"] \
                         or "tx_job_handler_pdf" in r_data and orig_job_id in r_data["tx_job_handler_pdf"]):
