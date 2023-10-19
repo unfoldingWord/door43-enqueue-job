@@ -517,6 +517,7 @@ def getJob(job_id):
             prefix = f'{PREFIX}{q_name}_'
         job = queue.fetch_job(f'{prefix}{job_id}')
         if not job or not job.args:
+            logger.error(f"FAILED!!!!!!!!! {q_name} - {prefix}{job_id}: {job}")
             continue
         job_data = {
             "queue_name": q_name,
