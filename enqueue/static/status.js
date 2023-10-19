@@ -1,7 +1,7 @@
 var $loading;
 
 $(document).ready(() => {
-  $loading = $("#loading").hide();
+  $loading = $(".loading").hide();
   if (
     $("#repo").val() ||
     $("#ref").val() ||

@@ -41,7 +41,7 @@
     </form>
     <div id="status-message"></div>
     <div id="start-message"><b>To Start, enter filter criteria, or just click "GO!"</b></div>
-    <div id="loading" class="spinner-border spinner-border-sm" role="status">
+    <div class="loading spinner-border spinner-border-sm" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
     <br />
@@ -78,6 +78,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="scheduledCount">0 jobs</span> (scheduled jobs are enqueued after 10 minutes)
               </td>
             </tr>
@@ -88,6 +91,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="enqueuedCount">0 jobs</span>
               </td>
             </tr>
@@ -98,6 +104,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="startedCount">0 jobs</span>
               </td>
             </tr>
@@ -108,6 +117,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="finishedCount">0 jobs</span> in the last 24 hours
                 <i onClick="removeFinished()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Finished Jobs > 3 hour old"></i>
               </td>
@@ -119,6 +131,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="failedCount">0 jobs</span>
                 <i onClick="removeFailed()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Failed Jobs > 24 hours old"></i>
               </td>
@@ -131,6 +146,9 @@
                 </button>
               </th>
               <td colspan="5" style="font-style:italic; vertical-align: middle;">
+                <span class="loading spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </span>            
                 <span id="canceledCount">0</span> jobs
                 <i onClick="removeCanceled()" class="fa-solid fa-trash" data-toggle="tooltip" data-placement="top" title="Removed Canceled Jobs > 3 hours old"></i>
               </td>
