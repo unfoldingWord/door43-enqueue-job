@@ -38,12 +38,12 @@
       <input type="button" name="filter" value="GO!" onClick="filterTable()" />
       <input type="button" name="clear" value="Clear"
         onClick="(()=>{$('#repo').val('');$('#ref').val('');$('#event').val('');$('#job-id').val('');filterTable()})()" />
-      <div id="loading" class="spinner-border spinner-border-sm" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
     </form>
     <div id="status-message"></div>
     <div id="start-message"><b>To Start, enter filter criteria, or just click "GO!"</b></div>
+    <div id="loading" class="spinner-border spinner-border-sm" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
     <br />
     <div id="status-results" style="clear:both">
       <div id="status-table-wrapper" class="responsive" style="display:none">
