@@ -762,7 +762,7 @@ def get_job_list_html(job_data):
     ref = job_data["ref"]
     event = job_data["event"]
 
-    html = f'ID: <a href="job/{job_id}">{job_id[:5]}</a><br/>'+ \
+    html = f'ID: <a href="javascript:void(0)" onClick="$(\'#job-id\').val(\'{job_id}\');filterTable();return false;">{job_id[:5]}</a>&nbsp;<a href="job/{job_id}" title="View Job Info"><i class="fa-solid fa-info-circle"></i></a><br/>'+ \
             f'Repo: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"].split("/")[0]}\')" title="Owner">'+ \
             f'{job_data["repo"].split("/")[0]}</a>/'+ \
             f'<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\')" title="Repo">'+ \
