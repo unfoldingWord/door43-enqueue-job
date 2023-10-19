@@ -617,7 +617,8 @@ def clearCanceled():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            job.delete()
+            if job:
+                job.delete()
     return "Canceled jobs cleared"
 
 
