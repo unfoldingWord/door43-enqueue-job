@@ -603,22 +603,24 @@ def getJob(job_id):
 
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/clear/failed", methods=['GET'])
 def clearFailed():
+    hours = request.args.get("hours", 24)
     for queue_name in queue_names:
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job:
+            if job and job.is_failed and (datetime.utcnow() - job.ended_at) >= timedelta(hours=hours):
                 job.delete()
     return "Failed jobs cleared"
 
 
 @app.route('/'+WEBHOOK_URL_SEGMENT+"status/clear/canceled", methods=['GET'])
 def clearCanceled():
+    hours = request.args.get("hours", 3)
     for queue_name in queue_names:
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job:
+            if job and job.is_canceled and (datetime.utcnow() - job.created_at) >= timedelta(hours=hours):
                 job.delete()
     return "Canceled jobs cleared"
 
