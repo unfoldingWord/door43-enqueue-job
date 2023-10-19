@@ -769,10 +769,10 @@ def get_job_list_html(job_data):
             f'{job_data["repo"].split("/")[-1]}</a><br/>'+ \
             f'{ref_type.capitalize()}: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{ref}\')">'+ \
             f'{ref}'+ \
-            f'</a><br/>'+ \
-            f'Event: <a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')" title="Type of job request">'+ \
-            f'{job_data["event"]}'+ \
-            f'</a><br/>'
+            f'</a>'+ \
+            f'&nbsp;(<a href="javascript:void(0)" onClick="filterTable(\'{job_data["repo"]}\', \'{job_data["ref"]}\', \'{job_data["event"]}\')" title="Type of job request">'+ \
+            f'{event}'+ \
+            f'</a>)<br/>'
 
     if job_data["ended_at"]:
         timeago = f'{get_relative_time(job_data["ended_at"])} ago'
