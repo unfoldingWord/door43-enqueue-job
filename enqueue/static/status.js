@@ -2,6 +2,7 @@ var $loading;
 
 $(document).ready(() => {
   $loading = $(".loading").hide();
+  $('[data-toggle="tooltip"]').tooltip();
   if (
     $("#repo").val() ||
     $("#ref").val() ||
@@ -10,7 +11,6 @@ $(document).ready(() => {
   ) {
     filterTable();
   }
-  $('[data-toggle="tooltip"]').tooltip();
 });
 
 var filterTableCallID = 0;
@@ -91,6 +91,7 @@ function filterTable(repo, ref, dcs_event) {
     },
     complete: function (result) {
       $loading.hide();
+      $('[data-toggle="tooltip"]').tooltip();
     },
   });
 }
