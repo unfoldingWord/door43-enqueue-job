@@ -518,7 +518,9 @@ def getJob(job_id):
             prefix = f'{PREFIX}{q_name}_'
         job = queue.fetch_job(f'{prefix}{job_id}')
         if not job or not job.args:
-            continue
+            job = queue.fetch_job(f'tx_job_handler_{job_id}')
+            if not job or not job.args:
+                continue
         job_data = {
             "queue_name": q_name,
             "created_at": job.created_at,
