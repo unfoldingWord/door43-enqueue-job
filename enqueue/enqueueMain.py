@@ -617,7 +617,7 @@ def clearFinished():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.finished_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job and (datetime.now() - job.created_at) >= timedelta(hours=hours):
+            if job and job.created_at and (datetime.now() - job.created_at) >= timedelta(hours=hours):
                 job.delete()
                 count += 1
     if count == 0:
@@ -635,9 +635,10 @@ def clearFailed():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.failed_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if not job or not job.ended_at:
-                continue
-            if job and (datetime.now() - job.ended_at) >= timedelta(hours=hours):
+            if job and job.ended_at and (datetime.now() - job.ended_at) >= timedelta(hours=hours):
+                job.delete()
+                count += 1
+            elif job and job.created_at and (datetime.now() - job.created_at) >= timedelta(hours=hours+24):
                 job.delete()
                 count += 1
     if count == 0:
@@ -655,7 +656,7 @@ def clearCanceled():
         queue = Queue(queue_name, connection=redis_connection)
         for job_id in queue.canceled_job_registry.get_job_ids():
             job = queue.fetch_job(job_id)
-            if job and (datetime.now() - job.created_at) >= timedelta(hours=hours):
+            if job and job.created_at and (datetime.now() - job.created_at) >= timedelta(hours=hours):
                 job.delete()
                 count += 1
     if count == 0:
