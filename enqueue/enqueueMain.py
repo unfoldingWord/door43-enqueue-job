@@ -253,7 +253,7 @@ def job_receiver():
         job_id = None
         if "job_id" in response_dict:
             job_id = response_dict["job_id"]
-        if 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref'] and "main" not in response_dict['ref'] and response_dict["DCS_event"] == "push":
+        if repo_name and '_tn' in repo_name.lower() and 'ref' in response_dict and "refs/tags" not in response_dict['ref'] and "master" not in response_dict['ref'] and "main" not in response_dict['ref'] and response_dict["DCS_event"] == "push":
             job = djh_queue.enqueue_in(timedelta(minutes=MINUTES_TO_WAIT), 'webhook.job', response_dict, job_id=job_id, job_timeout=WEBHOOK_TIMEOUT, result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
             stats_client.incr(f'{enqueue_job_stats_prefix}.scheduled')
             scheduled = True
