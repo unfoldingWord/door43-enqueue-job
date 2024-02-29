@@ -223,11 +223,11 @@ def job_receiver():
 
         # Check for special switch to echo production requests to dev- chain
         global echo_prodn_to_dev_flag
+        try:
+            repo_name = response_dict['repository']['full_name']
+        except (KeyError, AttributeError):
+            repo_name = None
         if not PREFIX: # Only apply to production chain
-            try:
-                repo_name = response_dict['repository']['full_name']
-            except (KeyError, AttributeError):
-                repo_name = None
             if repo_name == 'tx-manager-test-data/echo_prodn_to_dev_on':
                 echo_prodn_to_dev_flag = True
                 logger.info("TURNED ON 'echo_prodn_to_dev_flag'!\n")
